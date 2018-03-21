@@ -564,13 +564,11 @@ static bool cmd_resize_tiling_width_height(I3_CMD, Con *current, const char *way
     const double min_pct = 0.05;
 
     // Grow
-    if (ppt > 0.0)
-    {
+    if (ppt > 0.0) {
         // Sort cons by percent
         Con **tmp = scalloc(children, sizeof(Con *));
         int loop = 0;
-        TAILQ_FOREACH(child, &(current->parent->nodes_head), nodes)
-        {
+        TAILQ_FOREACH(child, &(current->parent->nodes_head), nodes) {
             tmp[loop++] = child;
         }
         qsort(tmp, children, sizeof(Con *), sort_cons_by_smallest_percent_cmp);
@@ -580,9 +578,8 @@ static bool cmd_resize_tiling_width_height(I3_CMD, Con *current, const char *way
         double requested_grow = ((double)ppt / 100.0);
         double total_remaining_shrinkage = requested_grow;
         int children_remaining = children - 1;
-        for (loop = 0; loop < children; ++loop)
-        {
-            Con* child = tmp[loop]; // readability
+        for (loop = 0; loop < children; ++loop) {
+            Con *child = tmp[loop];  // readability
             if (child == current)
                 continue;
             double subtract_percent = total_remaining_shrinkage / children_remaining;
@@ -590,7 +587,7 @@ static bool cmd_resize_tiling_width_height(I3_CMD, Con *current, const char *way
             if (child->percent <= min_pct)
                 continue;
             LOG("child->percent before (%p) = %f\n", child, child->percent);
-            if (child->percent <= subtract_percent + min_pct) // partial shrink
+            if (child->percent <= subtract_percent + min_pct)  // partial shrink
                 subtract_percent = child->percent - min_pct;
             total_remaining_shrinkage -= subtract_percent;
             child->percent -= subtract_percent;
@@ -598,8 +595,7 @@ static bool cmd_resize_tiling_width_height(I3_CMD, Con *current, const char *way
         }
         free(tmp);
 
-        if (requested_grow == total_remaining_shrinkage)
-        {
+        if (requested_grow == total_remaining_shrinkage) {
             LOG("Not resizing, already at maximum size\n");
             ysuccess(false);
             return false;
