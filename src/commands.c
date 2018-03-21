@@ -522,16 +522,10 @@ static bool cmd_resize_tiling_direction(I3_CMD, Con *current, const char *way, c
     return true;
 }
 
-static int sort_cons_by_smallest_percent_cmp(const void *a, const void *b) {
+static int compare_cons_by_percent(const void *a, const void *b) {
     Con *first = *((Con **)a);
     Con *second = *((Con **)b);
-    if (first->percent < second->percent) {
-        return 1;
-    } else if (first->percent == second->percent) {
-        return 0;
-    } else {
-        return -1;
-    }
+    return second->percent - first->percent;
 }
 static bool cmd_resize_tiling_width_height(I3_CMD, Con *current, const char *way, const char *direction, int ppt) {
     LOG("width/height resize\n");
@@ -561,25 +555,26 @@ static bool cmd_resize_tiling_width_height(I3_CMD, Con *current, const char *way
 
     LOG("current->percent before = %f\n", current->percent);
 
-    const double min_pct = 0.05;
+    /* Consider making this configurable. */
+    double min_pct = fabs(ppt / 100.0 / children);
 
-    // Grow
-    if (ppt > 0.0) {
-        // Sort cons by percent
+    /* Grow */
+    if (ppt > 0) {
+        /* Sort cons by percent */
         Con **tmp = scalloc(children, sizeof(Con *));
         int loop = 0;
         TAILQ_FOREACH(child, &(current->parent->nodes_head), nodes) {
             tmp[loop++] = child;
         }
-        qsort(tmp, children, sizeof(Con *), sort_cons_by_smallest_percent_cmp);
+        qsort(tmp, children, sizeof(Con *), compare_cons_by_percent);
 
-        // Walk children and shrink as appropriate.
-        // Less-than-avg children will give what they can, and the remaining avg adjusted accordingly.
+        /* Walk children and shrink as appropriate. */
+        /* Less-than-avg children will give what they can, and the remaining avg adjusted accordingly. */
         double requested_grow = ((double)ppt / 100.0);
         double total_remaining_shrinkage = requested_grow;
         int children_remaining = children - 1;
         for (loop = 0; loop < children; ++loop) {
-            Con *child = tmp[loop];  // readability
+            Con *child = tmp[loop];  /* readability */
             if (child == current)
                 continue;
             double subtract_percent = total_remaining_shrinkage / children_remaining;
@@ -587,7 +582,7 @@ static bool cmd_resize_tiling_width_height(I3_CMD, Con *current, const char *way
             if (child->percent <= min_pct)
                 continue;
             LOG("child->percent before (%p) = %f\n", child, child->percent);
-            if (child->percent <= subtract_percent + min_pct)  // partial shrink
+            if (child->percent <= subtract_percent + min_pct)  /* partial shrink */
                 subtract_percent = child->percent - min_pct;
             total_remaining_shrinkage -= subtract_percent;
             child->percent -= subtract_percent;
@@ -606,7 +601,7 @@ static bool cmd_resize_tiling_width_height(I3_CMD, Con *current, const char *way
         return true;
     }
 
-    // Shrink
+    /* Shrink */
     if (current->percent <= min_pct) {
         LOG("Not resizing, already at minimum size\n");
         ysuccess(false);
@@ -615,7 +610,7 @@ static bool cmd_resize_tiling_width_height(I3_CMD, Con *current, const char *way
 
     double requested_shrink = ((double)ppt / 100.0);
 
-    // Check for partial shrink
+    /* Check for partial shrink */
     if (current->percent + requested_shrink <= min_pct)
         requested_shrink = min_pct - current->percent;
 
