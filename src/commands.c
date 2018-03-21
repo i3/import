@@ -574,7 +574,7 @@ static bool cmd_resize_tiling_width_height(I3_CMD, Con *current, const char *way
         double total_remaining_shrinkage = requested_grow;
         int children_remaining = children - 1;
         for (loop = 0; loop < children; ++loop) {
-            Con *child = tmp[loop];  /* readability */
+            Con *child = tmp[loop]; /* readability */
             if (child == current)
                 continue;
             double subtract_percent = total_remaining_shrinkage / children_remaining;
@@ -582,7 +582,7 @@ static bool cmd_resize_tiling_width_height(I3_CMD, Con *current, const char *way
             if (child->percent <= min_pct)
                 continue;
             LOG("child->percent before (%p) = %f\n", child, child->percent);
-            if (child->percent <= subtract_percent + min_pct)  /* partial shrink */
+            if (child->percent <= subtract_percent + min_pct) /* partial shrink */
                 subtract_percent = child->percent - min_pct;
             total_remaining_shrinkage -= subtract_percent;
             child->percent -= subtract_percent;
