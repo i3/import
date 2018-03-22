@@ -556,11 +556,17 @@ static bool cmd_resize_tiling_width_height(I3_CMD, Con *current, const char *way
     LOG("current->percent before = %f\n", current->percent);
 
     /* min size */
-    /* We try to automatically calculate a reasonable min size. */
+    /* We are considering making this a configurable parameter. */
+    const double min_pct = 0.03;
+
+    /* NOTE: The following was rejected due to restricted handling of large values of ppt */
+    /* ---------------------------------------------------------------------------------- */
+    /* Here, we try to automatically calculate a reasonable min size. */
     /* We will start off with using ppt, then constrain further to a non-problematic value. */
     /* For one, min_pct must not be bigger than the average percentage calculated above. */
     /* Also, it should not be zero as bad things often happen when a window has zero size. */
-    double min_pct = fmax(0.03, fmin(percentage, fabs(ppt / 100.0)));
+    /* double min_pct = fmax(0.03, fmin(percentage, fabs(ppt / 100.0))); */
+    /* ---------------------------------------------------------------------------------- */
 
     /* Grow */
     if (ppt > 0) {
