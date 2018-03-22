@@ -555,7 +555,6 @@ static bool cmd_resize_tiling_width_height(I3_CMD, Con *current, const char *way
 
     LOG("current->percent before = %f\n", current->percent);
 
-    /* Consider making this configurable. */
     double min_pct = fabs(ppt / 100.0);
 
     /* Grow */
