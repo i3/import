@@ -247,6 +247,10 @@ CFGFUN(focus_follows_mouse, const char *value) {
     config.disable_focus_follows_mouse = !eval_boolstr(value);
 }
 
+CFGFUN(tiling_drag, const char *value) {
+    config.disable_tiling_drag = !eval_boolstr(value);
+}
+
 CFGFUN(mouse_warping, const char *value) {
     if (strcmp(value, "none") == 0)
         config.mouse_warping = POINTER_WARPING_NONE;

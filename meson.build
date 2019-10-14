@@ -404,6 +404,7 @@ i3srcs = [
   'src/sighandler.c',
   'src/startup.c',
   'src/sync.c',
+  'src/tiling_drag.c',
   'src/tree.c',
   'src/util.c',
   'src/version.c',

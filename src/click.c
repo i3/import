@@ -188,9 +188,6 @@ static void route_click(Con *con, xcb_button_press_event_t *event, const bool mo
             goto done;
     }
 
-    if (ws != focused_workspace)
-        workspace_show(ws);
-
     /* get the floating con */
     Con *floatingcon = con_inside_floating(con);
     const bool proportional = (event->state & XCB_KEY_BUT_MASK_SHIFT) == XCB_KEY_BUT_MASK_SHIFT;
@@ -218,7 +215,13 @@ static void route_click(Con *con, xcb_button_press_event_t *event, const bool mo
         goto done;
     }
 
-    /* 2: focus this con or one of its children. */
+    /* 2: floating modifier pressed, initiate a drag */
+    if (!config.disable_tiling_drag && mod_pressed && event->detail == XCB_BUTTON_INDEX_1 && !floatingcon) {
+        tiling_drag(con, event);
+        goto done;
+    }
+
+    /* 3: focus this con or one of its children. */
     Con *con_to_focus = con;
     if (in_stacked && dest == CLICK_DECORATION) {
         /* If the container is a tab/stacked container and the click happened
@@ -231,19 +234,22 @@ static void route_click(Con *con, xcb_button_press_event_t *event, const bool mo
             }
         }
     }
+    if (ws != focused_workspace) {
+        workspace_show(ws);
+    }
     con_activate(con_to_focus);
 
-    /* 3: For floating containers, we also want to raise them on click.
+    /* 4: For floating containers, we also want to raise them on click.
      * We will skip handling events on floating cons in fullscreen mode */
     Con *fs = con_get_fullscreen_covering_ws(ws);
     if (floatingcon != NULL && fs != con) {
-        /* 4: floating_modifier plus left mouse button drags */
+        /* 5: floating_modifier plus left mouse button drags */
         if (mod_pressed && is_left_click) {
             floating_drag_window(floatingcon, event, false);
             return;
         }
 
-        /*  5: resize (floating) if this was a (left or right) click on the
+        /*  6: resize (floating) if this was a (left or right) click on the
          * left/right/bottom border, or a right click on the decoration.
          * also try resizing (tiling) if possible */
         if (mod_pressed && is_right_click) {
@@ -272,7 +278,7 @@ static void route_click(Con *con, xcb_button_press_event_t *event, const bool mo
             return;
         }
 
-        /* 6: dragging, if this was a click on a decoration (which did not lead
+        /* 7: dragging, if this was a click on a decoration (which did not lead
          * to a resize) */
         if (dest == CLICK_DECORATION && is_left_click) {
             floating_drag_window(floatingcon, event, !was_focused);
@@ -282,7 +288,14 @@ static void route_click(Con *con, xcb_button_press_event_t *event, const bool mo
         goto done;
     }
 
-    /* 7: floating modifier pressed, initiate a resize */
+    /* 8: floating modifier pressed, initiate a drag */
+    if (!config.disable_tiling_drag && mod_pressed && event->detail == XCB_BUTTON_INDEX_1) {
+        DLOG("Trying to drag (tiling)\n");
+        tiling_drag(con, event);
+        goto done;
+    }
+
+    /* 9: floating modifier pressed, initiate a resize */
     if (dest == CLICK_INSIDE && mod_pressed && is_right_click) {
         if (floating_mod_on_tiled_client(con, event)) {
             return;
@@ -293,7 +306,7 @@ static void route_click(Con *con, xcb_button_press_event_t *event, const bool mo
         xcb_flush(conn);
         return;
     }
-    /* 8: otherwise, check for border/decoration clicks and resize */
+    /* 10: otherwise, check for border/decoration clicks and resize */
     if ((dest == CLICK_BORDER || dest == CLICK_DECORATION) &&
         is_left_or_right_click) {
         DLOG("Trying to resize (tiling)\n");
