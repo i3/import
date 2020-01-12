@@ -363,6 +363,9 @@ focus (array of integer)::
 	order. Traversing the tree by following the first entry in this array
 	will result in eventually reaching the one node with +focused+ set to
 	true.
+sticky (bool)::
+	Whether this window is "sticky". If it is also floating, this window will
+	be present on all workspaces
 fullscreen_mode (integer)::
 	Whether this container is in fullscreen state or not.
     Possible values are
