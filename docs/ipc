@@ -365,7 +365,7 @@ focus (array of integer)::
 	true.
 sticky (bool)::
 	Whether this window is "sticky". If it is also floating, this window will
-	be present on all workspaces
+	be present on all workspaces on the same output.
 fullscreen_mode (integer)::
 	Whether this container is in fullscreen state or not.
     Possible values are
