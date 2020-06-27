@@ -52,6 +52,8 @@ void render_con(Con *con) {
     int i = 0;
     con->mapped = true;
 
+    con->min_size.w = con->min_size.h = 0;
+
     /* if this container contains a window, set the coordinates */
     if (con->window) {
         /* depending on the border style, the rect of the child window
@@ -67,6 +69,10 @@ void render_con(Con *con) {
         inset->height -= (2 * con->border_width);
 
         *inset = rect_sanitize_dimensions(*inset);
+
+        Rect r = con_border_style_rect(con);
+        con->min_size.w = (uint32_t)1 - r.width + 2 * con->border_width;
+        con->min_size.h = (uint32_t)1 - r.height + 2 * con->border_width;
 
         /* NB: We used to respect resize increment size hints for tiling
          * windows up until commit 0db93d9 here. However, since all terminal
@@ -103,6 +109,8 @@ void render_con(Con *con) {
     /* precalculate the sizes to be able to correct rounding errors */
     params.sizes = precalculate_sizes(con, &params);
 
+    int total_deco_height = 0;
+
     if (con->layout == L_OUTPUT) {
         /* Skip i3-internal outputs */
         if (con_is_internal(con))
@@ -131,6 +139,33 @@ void render_con(Con *con) {
                  child->rect.x, child->rect.y, child->rect.width, child->rect.height);
             x_raise_con(child);
             render_con(child);
+
+            /* Accumulate minimum size of the con based on child->min_size.
+             * We may use child->min_size only after calling render_con(child).
+             *
+             * TODO: this isn't perfect as it fails to handle some corner cases,
+             * e.g. T [ S [ a* ] b ].  Probably, it can be fixed during a
+             * refactoring required to implement #1966.
+             */
+            if (con->layout == L_SPLITH) {
+                con->min_size.w += child->min_size.w;
+                con->min_size.h = max(con->min_size.h, child->min_size.h);
+            } else if (con->layout == L_SPLITV) {
+                con->min_size.w = max(con->min_size.w, child->min_size.w);
+                con->min_size.h += child->min_size.h;
+            } else if (con->layout == L_TABBED && child == TAILQ_FIRST(&(con->focus_head))) {
+                /* Only visible (i.e. focused) tab is considered. */
+                con->min_size.w = max(con->min_size.w, child->min_size.w);
+                con->min_size.h = max(con->min_size.h, child->min_size.h);
+            } else if (con->layout == L_STACKED) {
+                if (child == TAILQ_FIRST(&(con->focus_head))) {
+                    con->min_size.w = max(con->min_size.w, child->min_size.w);
+                    con->min_size.h = max(con->min_size.h, child->min_size.h);
+                } else {
+                    total_deco_height += params.deco_height;
+                }
+            }
+
             i++;
         }
 
@@ -155,6 +190,11 @@ void render_con(Con *con) {
                 x_raise_con(con);
         }
     }
+
+    if (con->layout != L_STACKED) {
+        total_deco_height = con->deco_rect.height;
+    }
+    con->min_size.h += total_deco_height;
 
 free_params:
     FREE(params.sizes);

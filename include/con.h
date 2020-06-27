@@ -462,13 +462,6 @@ void con_set_layout(Con *con, layout_t layout);
 void con_toggle_layout(Con *con, const char *toggle_mode);
 
 /**
- * Determines the minimum size of the given con by looking at its children (for
- * split/stacked/tabbed cons). Will be called when resizing floating cons
- *
- */
-Rect con_minimum_size(Con *con);
-
-/**
  * Returns true if changing the focus to con would be allowed considering
  * the fullscreen focus constraints. Specifically, if a fullscreen container or
  * any of its descendants is focused, this function returns true if and only if

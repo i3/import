@@ -11,134 +11,33 @@
 
 #include <time.h>
 
-typedef enum { CLICK_BORDER = 0,
-               CLICK_DECORATION = 1,
-               CLICK_INSIDE = 2 } click_destination_t;
-
-/*
- * Finds the correct pair of first/second cons between the resize will take
- * place according to the passed border position (top, left, right, bottom),
- * then calls resize_graphical_handler().
- *
- */
-static bool tiling_resize_for_border(Con *con, border_t border, xcb_button_press_event_t *event, bool use_threshold) {
-    DLOG("border = %d, con = %p\n", border, con);
-    Con *second = NULL;
-    Con *first = con;
-    direction_t search_direction;
-    switch (border) {
-        case BORDER_LEFT:
-            search_direction = D_LEFT;
-            break;
-        case BORDER_RIGHT:
-            search_direction = D_RIGHT;
-            break;
-        case BORDER_TOP:
-            search_direction = D_UP;
-            break;
-        case BORDER_BOTTOM:
-            search_direction = D_DOWN;
-            break;
-    }
-
-    bool res = resize_find_tiling_participants(&first, &second, search_direction, false);
-    if (!res) {
-        DLOG("No second container in this direction found.\n");
-        return false;
-    }
-    if (first->fullscreen_mode != second->fullscreen_mode) {
-        DLOG("Avoiding resize between containers with different fullscreen modes, %d != %d\n", first->fullscreen_mode, second->fullscreen_mode);
-        return false;
-    }
-
-    assert(first != second);
-    assert(first->parent == second->parent);
-
-    /* The first container should always be in front of the second container */
-    if (search_direction == D_UP || search_direction == D_LEFT) {
-        Con *tmp = first;
-        first = second;
-        second = tmp;
-    }
-
-    const orientation_t orientation = ((border == BORDER_LEFT || border == BORDER_RIGHT) ? HORIZ : VERT);
-
-    resize_graphical_handler(first, second, orientation, event, use_threshold);
-
-    DLOG("After resize handler, rendering\n");
-    tree_render();
-    return true;
-}
-
 /*
  * Called when the user clicks using the floating_modifier, but the client is in
  * tiling layout.
  *
- * Returns false if it does not do anything (that is, the click should be sent
- * to the client).
- *
  */
-static bool floating_mod_on_tiled_client(Con *con, xcb_button_press_event_t *event) {
-    /* The client is in tiling layout. We can still initiate a resize with the
-     * right mouse button, by chosing the border which is the most near one to
-     * the position of the mouse pointer */
-    int to_right = con->rect.width - event->event_x,
-        to_left = event->event_x,
-        to_top = event->event_y,
-        to_bottom = con->rect.height - event->event_y;
-
-    DLOG("click was %d px to the right, %d px to the left, %d px to top, %d px to bottom\n",
-         to_right, to_left, to_top, to_bottom);
-
-    if (to_right < to_left &&
-        to_right < to_top &&
-        to_right < to_bottom)
-        return tiling_resize_for_border(con, BORDER_RIGHT, event, false);
-
-    if (to_left < to_right &&
-        to_left < to_top &&
-        to_left < to_bottom)
-        return tiling_resize_for_border(con, BORDER_LEFT, event, false);
-
-    if (to_top < to_right &&
-        to_top < to_left &&
-        to_top < to_bottom)
-        return tiling_resize_for_border(con, BORDER_TOP, event, false);
-
-    if (to_bottom < to_right &&
-        to_bottom < to_left &&
-        to_bottom < to_top)
-        return tiling_resize_for_border(con, BORDER_BOTTOM, event, false);
-
-    return false;
+static void floating_mod_on_tiled_client(Con *con, xcb_button_press_event_t *event) {
+    resize_direction_t dir = get_resize_direction(con, event->root_x, event->root_y, CLICK_INSIDE);
+    resize_params_t params;
+    dir = resize_find_tiling_participants_two_axes(con, dir, &params);
+    enum xcursor_cursor_t cursor = xcursor_type_for_resize_direction(dir, true);
+    resize_graphical_handler(event, cursor, false, &params);
 }
 
 /*
  * Finds out which border was clicked on and calls tiling_resize_for_border().
  *
  */
-static bool tiling_resize(Con *con, xcb_button_press_event_t *event, const click_destination_t dest, bool use_threshold) {
-    /* check if this was a click on the window border (and on which one) */
-    Rect bsr = con_border_style_rect(con);
-    DLOG("BORDER x = %d, y = %d for con %p, window 0x%08x\n",
-         event->event_x, event->event_y, con, event->event);
-    DLOG("checks for right >= %d\n", con->window_rect.x + con->window_rect.width);
-    if (dest == CLICK_DECORATION) {
-        return tiling_resize_for_border(con, BORDER_TOP, event, use_threshold);
+static bool tiling_resize(Con *con, xcb_button_press_event_t *event, click_destination_t dest, bool use_threshold) {
+    resize_direction_t dir = get_resize_direction(con, event->root_x, event->root_y, dest);
+    resize_params_t params;
+    dir = resize_find_tiling_participants_two_axes(con, dir, &params);
+    if (dir == RD_NONE) {
+        return false;
     }
-
-    if (event->event_x >= 0 && event->event_x <= (int32_t)bsr.x &&
-        event->event_y >= (int32_t)bsr.y && event->event_y <= (int32_t)(con->rect.height + bsr.height))
-        return tiling_resize_for_border(con, BORDER_LEFT, event, false);
-
-    if (event->event_x >= (int32_t)(con->window_rect.x + con->window_rect.width) &&
-        event->event_y >= (int32_t)bsr.y && event->event_y <= (int32_t)(con->rect.height + bsr.height))
-        return tiling_resize_for_border(con, BORDER_RIGHT, event, false);
-
-    if (event->event_y >= (int32_t)(con->window_rect.y + con->window_rect.height))
-        return tiling_resize_for_border(con, BORDER_BOTTOM, event, false);
-
-    return false;
+    enum xcursor_cursor_t cursor = xcursor_type_for_resize_direction(dir, false);
+    resize_graphical_handler(event, cursor, use_threshold, &params);
+    return true;
 }
 
 /*
@@ -273,8 +172,6 @@ static void route_click(Con *con, xcb_button_press_event_t *event, const bool mo
     /* 7: floating modifier pressed, initiate a resize */
     if (dest == CLICK_INSIDE && mod_pressed && is_right_click) {
         floating_mod_on_tiled_client(con, event);
-        /* Avoid propagating events to clients, since the user expects
-         * $mod + click to be handled by i3. */
         return;
     }
     /* 8: otherwise, check for border/decoration clicks and resize */

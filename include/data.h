@@ -777,4 +777,8 @@ struct Con {
 
     /* The colormap for this con if a custom one is used. */
     xcb_colormap_t colormap;
+
+    /* The minimum size of the container, which is consists of the size of the
+     * borders, decorations, and minimum sizes of its children. */
+    struct width_height min_size;
 };
