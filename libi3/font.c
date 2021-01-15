@@ -47,9 +47,11 @@ static bool load_pango_font(i3Font *font, const char *desc) {
         return false;
     }
 
+    int font_size = pango_font_description_get_size(font->specific.pango_desc) / PANGO_SCALE;
+
     LOG("Using Pango font %s, size %d\n",
         pango_font_description_get_family(font->specific.pango_desc),
-        pango_font_description_get_size(font->specific.pango_desc) / PANGO_SCALE);
+        font_size);
 
     /* We cache root_visual_type here, since you must call
      * load_pango_font before any other pango function
@@ -74,6 +76,7 @@ static bool load_pango_font(i3Font *font, const char *desc) {
 
     /* Set the font type and return successfully */
     font->type = FONT_TYPE_PANGO;
+    font->size = font_size;
     return true;
 }
 

@@ -614,9 +614,9 @@ void x_draw_decoration(Con *con) {
     x_draw_title_border(con, p);
 
     /* 6: draw the title */
-    int text_offset_y = (con->deco_rect.height - config.font.height) / 2;
+    int deco_padding_h = (con->deco_rect.height - config.font.size) / 2;
+    int deco_padding_v = (con->deco_rect.height - config.font.height) / 2;
 
-    const int title_padding = logical_px(2);
     const int deco_width = (int)con->deco_rect.width;
     int mark_width = 0;
     if (config.show_marks && !TAILQ_EMPTY(&(con->marks_head))) {
@@ -640,16 +640,16 @@ void x_draw_decoration(Con *con) {
             mark_width = predict_text_width(mark);
 
             int mark_offset_x = (config.title_align == ALIGN_RIGHT)
-                                    ? title_padding
-                                    : deco_width - mark_width - title_padding;
+                                    ? deco_padding_h
+                                    : deco_width - mark_width - deco_padding_h;
 
             draw_util_text(mark, &(parent->frame_buffer),
                            p->color->text, p->color->background,
                            con->deco_rect.x + mark_offset_x,
-                           con->deco_rect.y + text_offset_y, mark_width);
+                           con->deco_rect.y + deco_padding_v, mark_width);
             I3STRING_FREE(mark);
 
-            mark_width += title_padding;
+            mark_width += deco_padding_h;
         }
 
         FREE(formatted_mark);
@@ -680,7 +680,7 @@ void x_draw_decoration(Con *con) {
     switch (config.title_align) {
         case ALIGN_LEFT:
             /* (pad)[text    ](pad)[mark + its pad) */
-            title_offset_x = title_padding;
+            title_offset_x = deco_padding_h;
             break;
         case ALIGN_CENTER:
             /* (pad)[  text  ](pad)[mark + its pad)
@@ -690,19 +690,19 @@ void x_draw_decoration(Con *con) {
              * where surface_width = deco_width - 2 * pad - mark_width
              * so, offset = pad + (surface_width - predict_text_width) / 2 =
              * = … = (deco_width - mark_width - predict_text_width) / 2 */
-            title_offset_x = max(title_padding, (deco_width - mark_width - predict_text_width(title)) / 2);
+            title_offset_x = max(deco_padding_h, (deco_width - mark_width - predict_text_width(title)) / 2);
             break;
         case ALIGN_RIGHT:
             /* [mark + its pad](pad)[    text](pad) */
-            title_offset_x = max(title_padding + mark_width, deco_width - title_padding - predict_text_width(title));
+            title_offset_x = max(deco_padding_h + mark_width, deco_width - deco_padding_h - predict_text_width(title));
             break;
     }
 
     draw_util_text(title, &(parent->frame_buffer),
                    p->color->text, p->color->background,
                    con->deco_rect.x + title_offset_x,
-                   con->deco_rect.y + text_offset_y,
-                   deco_width - mark_width - 2 * title_padding);
+                   con->deco_rect.y + deco_padding_v,
+                   deco_width - mark_width - 2 * deco_padding_h);
 
     if (win == NULL || con->title_format != NULL) {
         I3STRING_FREE(title);

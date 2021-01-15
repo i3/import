@@ -539,6 +539,7 @@ my $expected_all_tokens = "ERROR: CONFIG: Expected one of these tokens: <end>, '
         force_display_urgency_hint
         focus_on_window_activation
         title_align
+        title_height
         show_marks
         workspace
         ipc_socket
@@ -626,10 +627,10 @@ EOT
 my $expected_tail = <<'EOT';
 ERROR: CONFIG: (in file <stdin>)
 ERROR: CONFIG: Line   3: font foobar
-ERROR: CONFIG: Line   4: 
+ERROR: CONFIG: Line   4:
 ERROR: CONFIG: Line   5: unknown qux
 ERROR: CONFIG:           ^^^^^^^^^^^
-ERROR: CONFIG: Line   6: 
+ERROR: CONFIG: Line   6:
 ERROR: CONFIG: Line   7: # yay
 EOT
 

@@ -66,6 +66,9 @@ struct Font {
     /** The height of the font, built from font_ascent + font_descent */
     int height;
 
+    /** Font size as described in config */
+    int size;
+
     /** The pattern/name used to load the font. */
     char *pattern;
 

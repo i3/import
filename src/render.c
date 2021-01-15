@@ -25,7 +25,10 @@ static void render_con_dockarea(Con *con, Con *child, render_params *p);
  * Returns the height for the decorations
  */
 int render_deco_height(void) {
-    int deco_height = config.font.height + 4;
+    int deco_height = config.title_height;
+    if (deco_height == 0) {
+        deco_height = config.font.height + 4 + logical_px(2);
+    }
     if (config.font.height & 0x01)
         ++deco_height;
     return deco_height;

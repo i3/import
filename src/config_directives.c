@@ -329,6 +329,10 @@ CFGFUN(title_align, const char *alignment) {
     }
 }
 
+CFGFUN(title_height, long height) {
+    config.title_height = height;
+}
+
 CFGFUN(show_marks, const char *value) {
     config.show_marks = eval_boolstr(value);
 }
