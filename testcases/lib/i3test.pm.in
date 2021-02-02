@@ -10,6 +10,7 @@ use X11::XCB qw(:all);
 use lib qw(@abs_top_builddir@/AnyEvent-I3/blib/lib);
 use AnyEvent::I3;
 use List::Util qw(first);
+use List::MoreUtils qw(any);
 use Time::HiRes qw(sleep);
 use Cwd qw(abs_path);
 use POSIX ':sys_wait_h';
@@ -1096,7 +1097,7 @@ The following arguments can be passed:
 =item layout_before
 
 Required argument. The initial layout to be created. For example,
-'H[ V[ a* S[ b c ] d ] e ]' or 'V[a b] T[c d*]'.
+'H[ V[ a* S[ b c ] d ] e ]' or 'V[a b] Tr[c d*]'.
 The layout will be converted to a JSON file which will be passed to i3's
 append_layout command.
 
@@ -1107,12 +1108,13 @@ The syntax's rules, assertions and limitations are:
 =item 1.
 
 Upper case letters H, V, S, T mean horizontal, vertical, stacked and tabbed
-layout respectively. They must be followed by an opening square bracket and must
-be closed with a closing square bracket.
-Each of the non-leaf containers is marked with their corresponding letter
-followed by a number indicating the position of the container relative to other
-containers of the same type. For example, 'H[V[xxx] V[xxx] H[xxx]]' will mark
-the non-leaf containers as H1, V1, V2, H2.
+layout respectively. They must be followed by either the letter r to specify
+reverse fill order for this container, or an opening square bracket. Opening
+square backets must be closed with a closing square bracket.  Each of the
+non-leaf containers is marked with their corresponding letter followed by a
+number indicating the position of the container relative to other containers of
+the same type. For example, 'H[V[xxx] V[xxx] H[xxx]]' will mark the non-leaf
+containers as H1, V1, V2, H2.
 
 =item 2.
 
@@ -1199,22 +1201,42 @@ sub create_layout {
     my $depth = 0;
     my %layout_counts = (H => 0, V => 0, S => 0, T => 0);
 
+    my $node_layout_definition = 0;
+    my $node_layout_fill_order;
+
     foreach my $char (split('', $layout)) {
-        if ($char eq 'H') {
-            $r = $r . '{"layout": "splith",';
-            $r = $r . '"marks": ["H' . ++$layout_counts{H} . '"],';
-        } elsif ($char eq 'V') {
-            $r = $r . '{"layout": "splitv",';
-            $r = $r . '"marks": ["V' . ++$layout_counts{V} . '"],';
-        } elsif ($char eq 'S') {
-            $r = $r . '{"layout": "stacked",';
-            $r = $r . '"marks": ["S' . ++$layout_counts{S} . '"],';
-        } elsif ($char eq 'T') {
-            $r = $r . '{"layout": "tabbed",';
-            $r = $r . '"marks": ["T' . ++$layout_counts{T} . '"],';
+        if ($node_layout_definition) {
+            if ($char eq 'r') {
+                $node_layout_fill_order = 'reverse';
+            } elsif ($char eq '*') {
+                $focus = $windows[$#windows];
+            } elsif ($char eq '[') {
+                $node_layout_definition = 0;
+                $depth++;
+
+                $r = $r . '"layout_fill_order": "'.$node_layout_fill_order.'",';
+                $r = $r . '"nodes": [';
+            } else {
+                die "Could not understand '$char' in layout definition";
+            }
+        } elsif (any { $_ eq $char } ('H', 'V', 'S', 'T')) {
+            $node_layout_definition = 1;
+            $node_layout_fill_order = 'default';
+
+            if ($char eq 'H') {
+                $r = $r . '{"layout": "splith",';
+                $r = $r . '"marks": ["H' . ++$layout_counts{H} . '"],';
+            } elsif ($char eq 'V') {
+                $r = $r . '{"layout": "splitv",';
+                $r = $r . '"marks": ["V' . ++$layout_counts{V} . '"],';
+            } elsif ($char eq 'S') {
+                $r = $r . '{"layout": "stacked",';
+                $r = $r . '"marks": ["S' . ++$layout_counts{S} . '"],';
+            } elsif ($char eq 'T') {
+                $r = $r . '{"layout": "tabbed",';
+                $r = $r . '"marks": ["T' . ++$layout_counts{T} . '"],';
+            }
         } elsif ($char eq '[') {
-            $depth++;
-            $r = $r . '"nodes": [';
         } elsif ($char eq ']') {
             # End of nodes array: delete trailing comma.
             chop $r;
@@ -1261,32 +1283,50 @@ sub verify_layout {
     my $depth = 0;
     my $node;
 
+    my $node_layout;
+    my $node_layout_defined = 0;
+    my $node_layout_fill_order;
+    my $node_layout_definition = 0;
+    my $node_layout_container_focused = 0;
+
     foreach my $char (split('', $layout)) {
         my $node_name;
-        my $node_layout;
-        if ($char eq 'H') {
-            $node_layout = 'splith';
-        } elsif ($char eq 'V') {
-            $node_layout = 'splitv';
-        } elsif ($char eq 'S') {
-            $node_layout = 'stacked';
-        } elsif ($char eq 'T') {
-            $node_layout = 'tabbed';
-        } elsif ($char eq '[') {
-            $depth++;
-            delete $counters{$depth};
+        if ($node_layout_definition) {
+            if ($char eq 'r') {
+                $node_layout_fill_order = 'reverse';
+            } elsif ($char eq '*') {
+                $node_layout_container_focused = 1;
+            } elsif ($char eq '[') {
+                $node_layout_definition = 0;
+                $node_layout_defined = 1;
+            } else {
+                die "Could not understand '$char' in layout definition";
+            }
+        } elsif (any { $_ eq $char } ('H', 'V', 'S', 'T')) {
+            $node_layout_definition = 1;
+            $node_layout_fill_order = 'default';
+
+            if ($char eq 'H') {
+                $node_layout = 'splith';
+            } elsif ($char eq 'V') {
+                $node_layout = 'splitv';
+            } elsif ($char eq 'S') {
+                $node_layout = 'stacked';
+            } elsif ($char eq 'T') {
+                $node_layout = 'tabbed';
+            }
         } elsif ($char eq ']') {
             $depth--;
         } elsif ($char eq ' ') {
         } elsif ($char eq '*') {
-            $tester->is_eq($node->{focused}, 1, 'Correct node focused');
+            $tester->is_eq($node->{focused}, 1, "Correct node focused in depth $depth, node numer " . $counters{$depth});
         } elsif ($char =~ /[[:alnum:]]/) {
             $node_name = $char;
         } else {
             die "Could not understand $char";
         }
 
-        if ($node_layout || $node_name) {
+        if ($node_layout_defined || $node_name) {
             if (exists($counters{$depth})) {
                 $counters{$depth} = $counters{$depth} + 1;
             } else {
@@ -1298,8 +1338,19 @@ sub verify_layout {
                 $node = $node->{nodes}->[$counters{$i}];
             }
 
-            if ($node_layout) {
+            if ($node_layout_defined) {
+                if ($node_layout_container_focused) {
+                    $tester->is_eq($node->{focused}, 1, "Correct node focused in depth $depth, node numer " . $counters{$depth});
+                }
+
                 $tester->is_eq($node->{layout}, $node_layout, "Layouts match in depth $depth, node number " . $counters{$depth});
+                $tester->is_eq($node->{layout_fill_order}, $node_layout_fill_order, "Layout's fill order match in depth $depth, node number " . $counters{$depth});
+
+                $depth++;
+                delete $counters{$depth};
+
+                $node_layout_defined = 0;
+                $node_layout_container_focused = 0;
             } else {
                 $tester->is_eq($node->{name}, $node_name, "Names match in depth $depth, node number " . $counters{$depth});
             }

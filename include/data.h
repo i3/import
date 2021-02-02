@@ -98,6 +98,14 @@ typedef enum {
 } layout_t;
 
 /**
+ * Layout fill order. See Con::layout_fill_order.
+ */
+typedef enum {
+    LF_DEFAULT = 0,
+    LF_REVERSE = 1
+} layout_fill_t;
+
+/**
  * Binding input types. See Binding::input_type.
  */
 typedef enum {
@@ -195,6 +203,7 @@ struct deco_render_params {
     Rect con_deco_rect;
     color_t background;
     layout_t parent_layout;
+    layout_fill_t parent_layout_fill_order;
     bool con_is_leaf;
 };
 
@@ -710,7 +719,14 @@ struct Con {
      * layout in workspace_layout and creates a new split container with that
      * layout whenever a new container is attached to the workspace. */
     layout_t layout, last_split_layout, workspace_layout;
+
+    /* fill_order defines how layouts get filled with new containers. 'default'
+     * fills them left-to-right (or top-to-bottom for vertical layouts).
+     * 'reverse' fills them right-to-left (or bottom-to-top if vertical). */
+    layout_fill_t layout_fill_order;
+
     border_style_t border_style;
+
     /** floating? (= not in tiling layout) This cannot be simply a bool
      * because we want to keep track of whether the status was set by the
      * application (by setting _NET_WM_WINDOW_TYPE appropriately) or by the

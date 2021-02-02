@@ -184,7 +184,7 @@ CFGFUN(default_orientation, const char *orientation) {
         config.default_orientation = NO_ORIENTATION;
 }
 
-CFGFUN(workspace_layout, const char *layout) {
+CFGFUN(workspace_layout, const char *layout, const char *fill_order) {
     if (strcmp(layout, "default") == 0)
         config.default_layout = L_DEFAULT;
     else if (strcmp(layout, "stacking") == 0 ||
@@ -192,6 +192,12 @@ CFGFUN(workspace_layout, const char *layout) {
         config.default_layout = L_STACKED;
     else
         config.default_layout = L_TABBED;
+
+    if (fill_order != NULL && strcmp(fill_order, "reverse") == 0) {
+        config.default_layout_fill_order = LF_REVERSE;
+    } else {
+        config.default_layout_fill_order = LF_DEFAULT;
+    }
 }
 
 CFGFUN(default_border, const char *windowtype, const char *border, const long width) {

@@ -159,7 +159,7 @@ void cmd_floating(I3_CMD, const char *floating_mode);
 void cmd_move_workspace_to_output(I3_CMD, const char *name);
 
 /**
- * Implementation of 'split v|h|t|vertical|horizontal|toggle'.
+ * Implementation of 'split v|h|t|vertical|horizontal|toggle|left|right|up|down'.
  *
  */
 void cmd_split(I3_CMD, const char *direction);
@@ -225,16 +225,22 @@ void cmd_sticky(I3_CMD, const char *action);
 void cmd_move_direction(I3_CMD, const char *direction_str, long amount, const char *mode);
 
 /**
- * Implementation of 'layout default|stacked|stacking|tabbed|splitv|splith'.
+ * Implementation of 'layout default|stacked|stacking|tabbed|splitv|splith [reverse]'.
  *
  */
-void cmd_layout(I3_CMD, const char *layout_str);
+void cmd_layout(I3_CMD, const char *layout_str, const char *reverse);
 
 /**
  * Implementation of 'layout toggle [all|split]'.
  *
  */
 void cmd_layout_toggle(I3_CMD, const char *toggle_mode);
+
+/*
+ * Implementation of 'layout fill_order [default|reverse|toggle]'.
+ *
+ */
+void cmd_layout_fill_order(I3_CMD, const char *fill_order);
 
 /**
  * Implementation of 'exit'.

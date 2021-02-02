@@ -89,6 +89,7 @@ my %allowed_keys = map { ($_, 1) } qw(
     type
     fullscreen_mode
     layout
+    layout_fill_order
     border
     current_border_width
     floating
@@ -105,8 +106,9 @@ my %allowed_keys = map { ($_, 1) } qw(
 sub strip_containers {
     my ($tree) = @_;
 
-    # layout is not relevant for a leaf container
+    # layout and fill order are not relevant for a leaf container
     delete $tree->{layout} if leaf_node($tree);
+    delete $tree->{layout_fill_order} if leaf_node($tree);
 
     # fullscreen_mode conveys no state at all, it can either be 0 or 1 and the
     # default is _always_ 0, so skip noop entries.

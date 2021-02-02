@@ -103,10 +103,16 @@ state DEFAULT_ORIENTATION:
   orientation = 'horizontal', 'vertical', 'auto'
       -> call cfg_default_orientation($orientation)
 
-# workspace_layout <default|stacking|tabbed>
+# workspace_layout <default|stacking|tabbed> [reverse]
 state WORKSPACE_LAYOUT:
   layout = 'default', 'stacking', 'stacked', 'tabbed'
-      -> call cfg_workspace_layout($layout)
+      -> WORKSPACE_LAYOUT_FILL_ORDER
+
+state WORKSPACE_LAYOUT_FILL_ORDER:
+  end
+      -> call cfg_workspace_layout($layout, $fill_order)
+  fill_order = 'reverse'
+      -> call cfg_workspace_layout($layout, $fill_order)
 
 # <default_border|new_window> <normal|1pixel|none>
 # <default_floating_border|new_float> <normal|1pixel|none>

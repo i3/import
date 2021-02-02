@@ -45,7 +45,7 @@ CFGFUN(for_window, const char *command);
 CFGFUN(floating_minimum_size, const long width, const long height);
 CFGFUN(floating_maximum_size, const long width, const long height);
 CFGFUN(default_orientation, const char *orientation);
-CFGFUN(workspace_layout, const char *layout);
+CFGFUN(workspace_layout, const char *layout, const char *fill_order);
 CFGFUN(workspace_back_and_forth, const char *value);
 CFGFUN(focus_follows_mouse, const char *value);
 CFGFUN(mouse_warping, const char *value);

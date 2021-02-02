@@ -191,11 +191,16 @@ static void _con_attach(Con *con, Con *parent, Con *previous, bool ignore_focus)
             DLOG("done\n");
         }
 
-        /* Insert the container after the tiling container, if found.
+        /* Insert the container before/after the tiling container, if found.
          * When adding to a CT_OUTPUT, just append one after another. */
         if (current != NULL && parent->type != CT_OUTPUT) {
-            DLOG("Inserting con = %p after con %p\n", con, current);
-            TAILQ_INSERT_AFTER(nodes_head, current, con, nodes);
+            if (parent->layout_fill_order == LF_REVERSE) {
+                DLOG("Inserting con = %p before con %p\n", con, current);
+                TAILQ_INSERT_BEFORE(current, con, nodes);
+            } else {
+                DLOG("Inserting con = %p after con %p\n", con, current);
+                TAILQ_INSERT_AFTER(nodes_head, current, con, nodes);
+            }
         } else
             TAILQ_INSERT_TAIL(nodes_head, con, nodes);
     }
@@ -1870,9 +1875,9 @@ void con_set_layout(Con *con, layout_t layout) {
         /* In case last_split_layout was not initialized… */
         if (con->layout == L_DEFAULT)
             con->layout = L_SPLITH;
-    } else {
+    } else
         con->layout = layout;
-    }
+
     con_force_split_parents_redraw(con);
 }
 
@@ -1967,6 +1972,31 @@ void con_toggle_layout(Con *con, const char *toggle_mode) {
                 con_set_layout(con, L_STACKED);
             }
         }
+    }
+}
+
+/**
+ * This function changes the way new containers get added to layouts. The
+ * 'default' means the layout is filled left-to-right or top-to-bottom
+ * depending on orientation. 'reverse' changes that to right-to-left or
+ * bottom-to-top. 'toggle' inverts the setting depending on its previous value.
+ *
+ */
+void con_set_layout_fill_order(Con *con, const char *fill_order) {
+    Con *parent = con;
+    /* Users can focus workspaces, but not any higher in the hierarchy.
+     * Focus on the workspace is a special case, since in every other case, the
+     * user means "change the layout of the parent split container". */
+    if (con->type != CT_WORKSPACE)
+        parent = con->parent;
+    DLOG("con_set_fill_order(%p, %s), parent = %p\n", con, fill_order, parent);
+
+    if (strcasecmp(fill_order, "default") == 0) {
+        parent->layout_fill_order = LF_DEFAULT;
+    } else if (strcasecmp(fill_order, "reverse") == 0) {
+        parent->layout_fill_order = LF_REVERSE;
+    } else if (strcasecmp(fill_order, "toggle") == 0) {
+        parent->layout_fill_order = (parent->layout_fill_order == LF_DEFAULT) ? LF_REVERSE : LF_DEFAULT;
     }
 }
 
@@ -2252,19 +2282,36 @@ char *con_get_tree_representation(Con *con) {
 
     char *buf;
     /* 1) add the Layout type to buf */
-    if (con->layout == L_DEFAULT)
-        buf = sstrdup("D[");
-    else if (con->layout == L_SPLITV)
-        buf = sstrdup("V[");
-    else if (con->layout == L_SPLITH)
-        buf = sstrdup("H[");
-    else if (con->layout == L_TABBED)
-        buf = sstrdup("T[");
-    else if (con->layout == L_STACKED)
-        buf = sstrdup("S[");
-    else {
-        ELOG("BUG: Code not updated to account for new layout type\n");
-        assert(false);
+    if (con->layout_fill_order == LF_DEFAULT) {
+        if (con->layout == L_DEFAULT)
+            buf = sstrdup("D[");
+        else if (con->layout == L_SPLITV)
+            buf = sstrdup("V[");
+        else if (con->layout == L_SPLITH)
+            buf = sstrdup("H[");
+        else if (con->layout == L_TABBED)
+            buf = sstrdup("T[");
+        else if (con->layout == L_STACKED)
+            buf = sstrdup("S[");
+        else {
+            ELOG("BUG: Code not updated to account for new layout type\n");
+            assert(false);
+        }
+    } else {
+        if (con->layout == L_DEFAULT)
+            buf = sstrdup("Dr[");
+        else if (con->layout == L_SPLITV)
+            buf = sstrdup("Vr[");
+        else if (con->layout == L_SPLITH)
+            buf = sstrdup("Hr[");
+        else if (con->layout == L_TABBED)
+            buf = sstrdup("Tr[");
+        else if (con->layout == L_STACKED)
+            buf = sstrdup("Sr[");
+        else {
+            ELOG("BUG: Code not updated to account for new layout type\n");
+            assert(false);
+        }
     }
 
     /* 2) append representation of children */

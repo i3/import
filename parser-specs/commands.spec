@@ -100,13 +100,22 @@ state BORDER_WIDTH:
   border_width = number
     -> call cmd_border($border_style, &border_width)
 
-# layout default|stacked|stacking|tabbed|splitv|splith
+# layout default|stacked|stacking|tabbed|splitv|splith [reverse]
 # layout toggle [split|all]
+# layout fill_order [default|reverse|toggle]
 state LAYOUT:
   layout_mode = 'default', 'stacked', 'stacking', 'tabbed', 'splitv', 'splith'
-      -> call cmd_layout($layout_mode)
+      -> LAYOUT_REVERSE
   'toggle'
       -> LAYOUT_TOGGLE
+  'fill_order'
+      -> LAYOUT_FILL_ORDER
+
+state LAYOUT_REVERSE:
+  end
+      -> call cmd_layout($layout_mode, $layout_reverse)
+  layout_reverse = 'reverse'
+      -> call cmd_layout($layout_mode, $layout_reverse)
 
 # layout toggle [split|all]
 state LAYOUT_TOGGLE:
@@ -114,6 +123,13 @@ state LAYOUT_TOGGLE:
       -> call cmd_layout_toggle($toggle_mode)
   toggle_mode = string
       -> call cmd_layout_toggle($toggle_mode)
+
+# layout fill_order [default|reverse|toggle]
+state LAYOUT_FILL_ORDER:
+  end
+      -> call cmd_layout_fill_order($fill_order)
+  fill_order = 'default', 'reverse', 'toggle'
+      -> call cmd_layout_fill_order($fill_order)
 
 # append_layout <path>
 state APPEND_LAYOUT:
@@ -203,9 +219,11 @@ state STICKY:
   action = 'enable', 'disable', 'toggle'
       -> call cmd_sticky($action)
 
-# split v|h|t|vertical|horizontal|toggle
+# split v|vertical|up|down
+# split h|horizontal|left|right
+# split t|toggle
 state SPLIT:
-  direction = 'horizontal', 'vertical', 'toggle', 'v', 'h', 't'
+  direction = 'horizontal', 'vertical', 'toggle', 'v', 'h', 't', 'left', 'right', 'up', 'down'
       -> call cmd_split($direction)
 
 # floating enable|disable|toggle

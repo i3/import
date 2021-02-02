@@ -259,16 +259,24 @@ is(parser_calls($config),
 
 $config = <<'EOT';
 workspace_layout default
+workspace_layout default reverse
 workspace_layout stacked
+workspace_layout stacked reverse
 workspace_layout stacking
+workspace_layout stacking reverse
 workspace_layout tabbed
+workspace_layout tabbed reverse
 EOT
 
 $expected = <<'EOT';
-cfg_workspace_layout(default)
-cfg_workspace_layout(stacked)
-cfg_workspace_layout(stacking)
-cfg_workspace_layout(tabbed)
+cfg_workspace_layout(default, (null))
+cfg_workspace_layout(default, reverse)
+cfg_workspace_layout(stacked, (null))
+cfg_workspace_layout(stacked, reverse)
+cfg_workspace_layout(stacking, (null))
+cfg_workspace_layout(stacking, reverse)
+cfg_workspace_layout(tabbed, (null))
+cfg_workspace_layout(tabbed, reverse)
 EOT
 
 is(parser_calls($config),

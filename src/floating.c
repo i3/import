@@ -446,7 +446,10 @@ void floating_disable(Con *con) {
         con->percent = 0.0;
         con_fix_percent(con->parent);
     } else {
-        insert_con_into(con, tiling_focused, AFTER);
+        insert_con_into(con, tiling_focused,
+                        (tiling_focused->parent->layout_fill_order == LF_DEFAULT)
+                            ? AFTER
+                            : BEFORE);
     }
 
     con->floating = FLOATING_USER_OFF;

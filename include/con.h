@@ -462,6 +462,15 @@ void con_set_layout(Con *con, layout_t layout);
 void con_toggle_layout(Con *con, const char *toggle_mode);
 
 /**
+ * This function changes the way new containers get added to layouts. The
+ * 'default' means the layout is filled left-to-right or top-to-bottom
+ * depending on orientation. 'reverse' changes that to right-to-left or
+ * bottom-to-top. 'toggle' inverts the setting depending on its previous value.
+ *
+ */
+void con_set_layout_fill_order(Con *con, const char *fill_order);
+
+/**
  * Determines the minimum size of the given con by looking at its children (for
  * split/stacked/tabbed cons). Will be called when resizing floating cons
  *

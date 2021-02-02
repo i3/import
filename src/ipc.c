@@ -437,6 +437,16 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
             break;
     }
 
+    ystr("layout_fill_order");
+    switch (con->layout_fill_order) {
+        case LF_DEFAULT:
+            ystr("default");
+            break;
+        case LF_REVERSE:
+            ystr("reverse");
+            break;
+    }
+
     ystr("workspace_layout");
     switch (con->workspace_layout) {
         case L_DEFAULT:

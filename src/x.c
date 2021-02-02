@@ -375,6 +375,26 @@ static void x_draw_title_border(Con *con, struct deco_render_params *p) {
     /* Bottom */
     draw_util_rectangle(&(con->parent->frame_buffer), p->color->border,
                         dr->x, dr->y + dr->height - 1, dr->width, 1);
+
+    /* Draw split indicator on top of title bar for reverse vertical splits. In
+     * other cases, the indicator is drawn in x_draw_decoration().
+     *
+     * +###########+
+     * | Title     |
+     * +-----------+
+     * |           |
+     * | Window    |
+     * |           |
+     * +-----------+
+     */
+    if (TAILQ_NEXT(con, nodes) == NULL &&
+        TAILQ_PREV(con, nodes_head, nodes) == NULL &&
+        con->parent->type != CT_FLOATING_CON &&
+        con->parent->layout == L_SPLITV &&
+        con->parent->layout_fill_order == LF_REVERSE) {
+        draw_util_rectangle(&(con->parent->frame_buffer), p->color->indicator,
+                            dr->x + 1, dr->y, dr->width - 2, 1);
+    }
 }
 
 static void x_draw_decoration_after_title(Con *con, struct deco_render_params *p) {
@@ -509,6 +529,7 @@ void x_draw_decoration(Con *con) {
     p->background = config.client.background;
     p->con_is_leaf = con_is_leaf(con);
     p->parent_layout = con->parent->layout;
+    p->parent_layout_fill_order = con->parent->layout_fill_order;
 
     if (con->deco_render_params != NULL &&
         (con->window == NULL || !con->window->name_x_changed) &&
@@ -574,12 +595,56 @@ void x_draw_decoration(Con *con) {
         if (TAILQ_NEXT(con, nodes) == NULL &&
             TAILQ_PREV(con, nodes_head, nodes) == NULL &&
             con->parent->type != CT_FLOATING_CON) {
-            if (p->parent_layout == L_SPLITH) {
-                draw_util_rectangle(&(con->frame_buffer), p->color->indicator,
-                                    r->width + (br.width + br.x), br.y, -(br.width + br.x), r->height + br.height);
-            } else if (p->parent_layout == L_SPLITV) {
-                draw_util_rectangle(&(con->frame_buffer), p->color->indicator,
-                                    br.x, r->height + (br.height + br.y), r->width + br.width, -(br.height + br.y));
+            if (p->parent_layout_fill_order == LF_REVERSE) {
+                if (p->parent_layout == L_SPLITH) {
+                    /* +-----------+
+                     * | Title     |
+                     * +-----------+
+                     * #           |
+                     * # Window    |
+                     * #           |
+                     * +-----------+
+                     */
+                    draw_util_rectangle(&(con->frame_buffer), p->color->indicator,
+                                        br.x, br.y, br.width, r->height + br.height);
+                } else if (p->parent_layout == L_SPLITV) {
+                    /* Draw indicator on top border in case title bars are
+                     * disabled, otherwise indicator has to be drawn on the
+                     * title bar itself (see x_draw_title_border()).
+                     *
+                     * +###########+
+                     * |           |
+                     * | Window    |
+                     * |           |
+                     * +-----------+
+                     */
+                    draw_util_rectangle(&(con->frame_buffer), p->color->indicator,
+                                        br.x, br.y, r->width + br.width, br.height);
+                }
+            } else {
+                if (p->parent_layout == L_SPLITH) {
+                    /* +-----------+
+                     * | Title     |
+                     * +-----------+
+                     * |           #
+                     * | Window    #
+                     * |           #
+                     * +-----------+
+                     */
+                    draw_util_rectangle(&(con->frame_buffer), p->color->indicator,
+                                        r->width + (br.width + br.x), br.y, -(br.width + br.x), r->height + br.height);
+                } else if (p->parent_layout == L_SPLITV) {
+                    /* +-----------+
+                     * | Title     |
+                     * +-----------+
+                     * |           |
+                     * | Window    |
+                     * |           |
+                     * +###########+
+                     */
+                    draw_util_rectangle(&(con->frame_buffer), p->color->indicator,
+                                        br.x, r->height + (br.height + br.y), r->width + br.width, -(br.height + br.y));
+                }
             }
         }
     }

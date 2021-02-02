@@ -320,88 +320,105 @@ static int json_string(void *ctx, const unsigned char *val, size_t len) {
             char *buf = NULL;
             sasprintf(&buf, "%.*s", (int)len, val);
             if (strcasecmp(buf, "none") == 0 ||
-                strcasecmp(buf, "horizontal") == 0)
+                strcasecmp(buf, "horizontal") == 0) {
                 json_node->last_split_layout = L_SPLITH;
-            else if (strcasecmp(buf, "vertical") == 0)
+            } else if (strcasecmp(buf, "vertical") == 0) {
                 json_node->last_split_layout = L_SPLITV;
-            else
+            } else {
                 LOG("Unhandled orientation: %s\n", buf);
+            }
             free(buf);
         } else if (strcasecmp(last_key, "border") == 0) {
             char *buf = NULL;
             sasprintf(&buf, "%.*s", (int)len, val);
-            if (strcasecmp(buf, "none") == 0)
+            if (strcasecmp(buf, "none") == 0) {
                 json_node->border_style = BS_NONE;
-            else if (strcasecmp(buf, "1pixel") == 0) {
+            } else if (strcasecmp(buf, "1pixel") == 0) {
                 json_node->border_style = BS_PIXEL;
                 json_node->current_border_width = 1;
-            } else if (strcasecmp(buf, "pixel") == 0)
+            } else if (strcasecmp(buf, "pixel") == 0) {
                 json_node->border_style = BS_PIXEL;
-            else if (strcasecmp(buf, "normal") == 0)
+            } else if (strcasecmp(buf, "normal") == 0) {
                 json_node->border_style = BS_NORMAL;
-            else
+            } else {
                 LOG("Unhandled \"border\": %s\n", buf);
+            }
             free(buf);
         } else if (strcasecmp(last_key, "type") == 0) {
             char *buf = NULL;
             sasprintf(&buf, "%.*s", (int)len, val);
-            if (strcasecmp(buf, "root") == 0)
+            if (strcasecmp(buf, "root") == 0) {
                 json_node->type = CT_ROOT;
-            else if (strcasecmp(buf, "output") == 0)
+            } else if (strcasecmp(buf, "output") == 0) {
                 json_node->type = CT_OUTPUT;
-            else if (strcasecmp(buf, "con") == 0)
+            } else if (strcasecmp(buf, "con") == 0) {
                 json_node->type = CT_CON;
-            else if (strcasecmp(buf, "floating_con") == 0)
+            } else if (strcasecmp(buf, "floating_con") == 0) {
                 json_node->type = CT_FLOATING_CON;
-            else if (strcasecmp(buf, "workspace") == 0)
+            } else if (strcasecmp(buf, "workspace") == 0) {
                 json_node->type = CT_WORKSPACE;
-            else if (strcasecmp(buf, "dockarea") == 0)
+            } else if (strcasecmp(buf, "dockarea") == 0) {
                 json_node->type = CT_DOCKAREA;
-            else
+            } else {
                 LOG("Unhandled \"type\": %s\n", buf);
+            }
             free(buf);
         } else if (strcasecmp(last_key, "layout") == 0) {
             char *buf = NULL;
             sasprintf(&buf, "%.*s", (int)len, val);
-            if (strcasecmp(buf, "default") == 0)
+            if (strcasecmp(buf, "default") == 0) {
                 /* This set above when we read "orientation". */
                 json_node->layout = json_node->last_split_layout;
-            else if (strcasecmp(buf, "stacked") == 0)
+            } else if (strcasecmp(buf, "stacked") == 0) {
                 json_node->layout = L_STACKED;
-            else if (strcasecmp(buf, "tabbed") == 0)
+            } else if (strcasecmp(buf, "tabbed") == 0) {
                 json_node->layout = L_TABBED;
-            else if (strcasecmp(buf, "dockarea") == 0)
+            } else if (strcasecmp(buf, "dockarea") == 0) {
                 json_node->layout = L_DOCKAREA;
-            else if (strcasecmp(buf, "output") == 0)
+            } else if (strcasecmp(buf, "output") == 0) {
                 json_node->layout = L_OUTPUT;
-            else if (strcasecmp(buf, "splith") == 0)
+            } else if (strcasecmp(buf, "splith") == 0) {
                 json_node->layout = L_SPLITH;
-            else if (strcasecmp(buf, "splitv") == 0)
+            } else if (strcasecmp(buf, "splitv") == 0) {
                 json_node->layout = L_SPLITV;
-            else
+            } else {
                 LOG("Unhandled \"layout\": %s\n", buf);
+            }
             free(buf);
         } else if (strcasecmp(last_key, "workspace_layout") == 0) {
             char *buf = NULL;
             sasprintf(&buf, "%.*s", (int)len, val);
-            if (strcasecmp(buf, "default") == 0)
+            if (strcasecmp(buf, "default") == 0) {
                 json_node->workspace_layout = L_DEFAULT;
-            else if (strcasecmp(buf, "stacked") == 0)
+            } else if (strcasecmp(buf, "stacked") == 0) {
                 json_node->workspace_layout = L_STACKED;
-            else if (strcasecmp(buf, "tabbed") == 0)
+            } else if (strcasecmp(buf, "tabbed") == 0) {
                 json_node->workspace_layout = L_TABBED;
-            else
+            } else {
                 LOG("Unhandled \"workspace_layout\": %s\n", buf);
+            }
             free(buf);
         } else if (strcasecmp(last_key, "last_split_layout") == 0) {
             char *buf = NULL;
             sasprintf(&buf, "%.*s", (int)len, val);
-            if (strcasecmp(buf, "splith") == 0)
+            if (strcasecmp(buf, "splith") == 0) {
                 json_node->last_split_layout = L_SPLITH;
-            else if (strcasecmp(buf, "splitv") == 0)
+            } else if (strcasecmp(buf, "splitv") == 0) {
                 json_node->last_split_layout = L_SPLITV;
-            else
-                LOG("Unhandled \"last_splitlayout\": %s\n", buf);
+            } else {
+                LOG("Unhandled \"last_split_layout\": %s\n", buf);
+            }
+            free(buf);
+        } else if (strcasecmp(last_key, "layout_fill_order") == 0) {
+            char *buf = NULL;
+            sasprintf(&buf, "%.*s", (int)len, val);
+            if (strcasecmp(buf, "default") == 0) {
+                json_node->layout_fill_order = LF_DEFAULT;
+            } else if (strcasecmp(buf, "reverse") == 0) {
+                json_node->layout_fill_order = LF_REVERSE;
+            } else {
+                LOG("Unhandled \"layout_fill_order\": %s\n", buf);
+            }
             free(buf);
         } else if (strcasecmp(last_key, "mark") == 0) {
             DLOG("Found deprecated key \"mark\".\n");
@@ -413,24 +430,26 @@ static int json_string(void *ctx, const unsigned char *val, size_t len) {
         } else if (strcasecmp(last_key, "floating") == 0) {
             char *buf = NULL;
             sasprintf(&buf, "%.*s", (int)len, val);
-            if (strcasecmp(buf, "auto_off") == 0)
+            if (strcasecmp(buf, "auto_off") == 0) {
                 json_node->floating = FLOATING_AUTO_OFF;
-            else if (strcasecmp(buf, "auto_on") == 0)
+            } else if (strcasecmp(buf, "auto_on") == 0) {
                 json_node->floating = FLOATING_AUTO_ON;
-            else if (strcasecmp(buf, "user_off") == 0)
+            } else if (strcasecmp(buf, "user_off") == 0) {
                 json_node->floating = FLOATING_USER_OFF;
-            else if (strcasecmp(buf, "user_on") == 0)
+            } else if (strcasecmp(buf, "user_on") == 0) {
                 json_node->floating = FLOATING_USER_ON;
+            }
             free(buf);
         } else if (strcasecmp(last_key, "scratchpad_state") == 0) {
             char *buf = NULL;
             sasprintf(&buf, "%.*s", (int)len, val);
-            if (strcasecmp(buf, "none") == 0)
+            if (strcasecmp(buf, "none") == 0) {
                 json_node->scratchpad_state = SCRATCHPAD_NONE;
-            else if (strcasecmp(buf, "fresh") == 0)
+            } else if (strcasecmp(buf, "fresh") == 0) {
                 json_node->scratchpad_state = SCRATCHPAD_FRESH;
-            else if (strcasecmp(buf, "changed") == 0)
+            } else if (strcasecmp(buf, "changed") == 0) {
                 json_node->scratchpad_state = SCRATCHPAD_CHANGED;
+            }
             free(buf);
         } else if (strcasecmp(last_key, "previous_workspace_name") == 0) {
             FREE(previous_workspace_name);

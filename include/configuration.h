@@ -96,6 +96,7 @@ struct Config {
     char *restart_state_path;
 
     layout_t default_layout;
+    layout_fill_t default_layout_fill_order;
     int container_stack_limit;
     int container_stack_limit_value;
     int default_border_width;

@@ -324,7 +324,31 @@ bool tree_close_internal(Con *con, kill_window_t kill_window, bool dont_kill_par
  * container which contains the old one and the future ones.
  *
  */
-void tree_split(Con *con, orientation_t orientation) {
+void tree_split(Con *con, direction_t direction) {
+#define SET_LAYOUT_AND_FILL_ORDER_FROM_DIRECTION(con, direction) \
+    do {                                                         \
+        Con *_con = con;                                         \
+                                                                 \
+        switch (direction) {                                     \
+            case D_LEFT:                                         \
+                _con->layout = L_SPLITH;                         \
+                _con->layout_fill_order = LF_REVERSE;            \
+                break;                                           \
+            case D_RIGHT:                                        \
+                _con->layout = L_SPLITH;                         \
+                _con->layout_fill_order = LF_DEFAULT;            \
+                break;                                           \
+            case D_UP:                                           \
+                _con->layout = L_SPLITV;                         \
+                _con->layout_fill_order = LF_REVERSE;            \
+                break;                                           \
+            case D_DOWN:                                         \
+                _con->layout = L_SPLITV;                         \
+                _con->layout_fill_order = LF_DEFAULT;            \
+                break;                                           \
+        }                                                        \
+    } while (0)
+
     if (con_is_floating(con)) {
         DLOG("Floating containers can't be split.\n");
         return;
@@ -336,8 +360,8 @@ void tree_split(Con *con, orientation_t orientation) {
                 DLOG("Changing workspace_layout to L_DEFAULT\n");
                 con->workspace_layout = L_DEFAULT;
             }
-            DLOG("Changing orientation of workspace\n");
-            con->layout = (orientation == HORIZ) ? L_SPLITH : L_SPLITV;
+            DLOG("Changing layout and fill order of workspace\n");
+            SET_LAYOUT_AND_FILL_ORDER_FROM_DIRECTION(con, direction);
             return;
         } else {
             /* if there is more than one container on the workspace
@@ -357,19 +381,19 @@ void tree_split(Con *con, orientation_t orientation) {
     if (con_num_children(parent) == 1 &&
         (parent->layout == L_SPLITH ||
          parent->layout == L_SPLITV)) {
-        parent->layout = (orientation == HORIZ) ? L_SPLITH : L_SPLITV;
-        DLOG("Just changing orientation of existing container\n");
+        SET_LAYOUT_AND_FILL_ORDER_FROM_DIRECTION(parent, direction);
+        DLOG("Just changing layout and fill order of existing container\n");
         return;
     }
 
-    DLOG("Splitting in orientation %d\n", orientation);
+    DLOG("Splitting in direction %d\n", direction);
 
     /* 2: replace it with a new Con */
     Con *new = con_new(NULL, NULL);
     TAILQ_REPLACE(&(parent->nodes_head), con, new, nodes);
     TAILQ_REPLACE(&(parent->focus_head), con, new, focused);
     new->parent = parent;
-    new->layout = (orientation == HORIZ) ? L_SPLITH : L_SPLITV;
+    SET_LAYOUT_AND_FILL_ORDER_FROM_DIRECTION(new, direction);
 
     /* 3: swap 'percent' (resize factor) */
     new->percent = con->percent;
@@ -377,6 +401,7 @@ void tree_split(Con *con, orientation_t orientation) {
 
     /* 4: add it as a child to the new Con */
     con_attach(con, new, false);
+#undef SET_LAYOUT_AND_FILL_ORDER_FROM_DIRECTION
 }
 
 /*

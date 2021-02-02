@@ -33,11 +33,11 @@ void tree_init(xcb_get_geometry_reply_t *geometry);
 Con *tree_open_con(Con *con, i3Window *window);
 
 /**
- * Splits (horizontally or vertically) the given container by creating a new
- * container which contains the old one and the future ones.
+ * Splits the given container in any direction by creating a new container
+ * which contains the old one and the future ones.
  *
  */
-void tree_split(Con *con, orientation_t orientation);
+void tree_split(Con *con, direction_t direction);
 
 /**
  * Moves focus one level up. Returns true if focus changed.

@@ -243,6 +243,24 @@ static void move_to_output_directed(Con *con, direction_t direction) {
 }
 
 /*
+ * Figures out how to insert a con into a another con in relation to the
+ * targetted child node based on the target layout fill order and direction from
+ * which it will be inserted.
+ *
+ */
+static position_t tree_insert_position_from_direction(Con *target, direction_t direction) {
+    orientation_t o = orientation_from_direction(direction);
+    orientation_t target_orientation = con_orientation(target->parent);
+
+    if ((target_orientation == o && (direction == D_LEFT || direction == D_UP)) ||
+        (target_orientation != o && target->parent->layout_fill_order == LF_DEFAULT)) {
+        return AFTER;
+    } else {
+        return BEFORE;
+    }
+}
+
+/*
  * Moves the given container in the given direction
  *
  */
@@ -305,11 +323,7 @@ void tree_move(Con *con, direction_t direction) {
                 if (!con_is_leaf(swap)) {
                     DLOG("Moving into our bordering branch\n");
                     target = con_descend_direction(swap, direction);
-                    position = (con_orientation(target->parent) != o ||
-                                        direction == D_UP ||
-                                        direction == D_LEFT
-                                    ? AFTER
-                                    : BEFORE);
+                    position = tree_insert_position_from_direction(target, direction);
                     insert_con_into(con, target, position);
                     goto end;
                 }
@@ -358,11 +372,7 @@ void tree_move(Con *con, direction_t direction) {
     if (next && !con_is_leaf(next)) {
         DLOG("Moving into the bordering branch of our adjacent container\n");
         target = con_descend_direction(next, direction);
-        position = (con_orientation(target->parent) != o ||
-                            direction == D_UP ||
-                            direction == D_LEFT
-                        ? AFTER
-                        : BEFORE);
+        position = tree_insert_position_from_direction(target, direction);
         insert_con_into(con, target, position);
     } else if (!next &&
                con->parent->parent->type == CT_WORKSPACE &&

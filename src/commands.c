@@ -1125,14 +1125,14 @@ void cmd_move_workspace_to_output(I3_CMD, const char *name) {
 }
 
 /*
- * Implementation of 'split v|h|t|vertical|horizontal|toggle'.
+ * Implementation of 'split v|h|t|vertical|horizontal|toggle|left|right|up|down'.
  *
  */
 void cmd_split(I3_CMD, const char *direction) {
     HANDLE_EMPTY_MATCH;
 
     owindow *current;
-    LOG("splitting in direction %c\n", direction[0]);
+    LOG("splitting in direction %s\n", direction);
     TAILQ_FOREACH (current, &owindows, owindows) {
         if (con_is_docked(current->con)) {
             ELOG("Cannot split a docked container, skipping.\n");
@@ -1149,12 +1149,18 @@ void cmd_split(I3_CMD, const char *direction) {
             }
             /* toggling split orientation */
             if (current_layout == L_SPLITH) {
-                tree_split(current->con, VERT);
+                tree_split(current->con, (current->con->layout_fill_order == LF_DEFAULT) ? D_DOWN : D_UP);
             } else {
-                tree_split(current->con, HORIZ);
+                tree_split(current->con, (current->con->layout_fill_order == LF_DEFAULT) ? D_RIGHT : D_LEFT);
             }
-        } else {
-            tree_split(current->con, (direction[0] == 'v' ? VERT : HORIZ));
+        } else if (direction[0] == 'h' || direction[0] == 'r') {
+            tree_split(current->con, D_RIGHT);
+        } else if (direction[0] == 'l') {
+            tree_split(current->con, D_LEFT);
+        } else if (direction[0] == 'v' || direction[0] == 'd') {
+            tree_split(current->con, D_DOWN);
+        } else if (direction[0] == 'u') {
+            tree_split(current->con, D_UP);
         }
     }
 
@@ -1542,10 +1548,10 @@ void cmd_move_direction(I3_CMD, const char *direction_str, long amount, const ch
 }
 
 /*
- * Implementation of 'layout default|stacked|stacking|tabbed|splitv|splith'.
+ * Implementation of 'layout default|stacked|stacking|tabbed|splitv|splith [reverse]'.
  *
  */
-void cmd_layout(I3_CMD, const char *layout_str) {
+void cmd_layout(I3_CMD, const char *layout_str, const char *reverse) {
     HANDLE_EMPTY_MATCH;
 
     layout_t layout;
@@ -1565,6 +1571,8 @@ void cmd_layout(I3_CMD, const char *layout_str) {
 
         DLOG("matching: %p / %s\n", current->con, current->con->name);
         con_set_layout(current->con, layout);
+        if (reverse != NULL)
+            con_set_layout_fill_order(current->con, reverse);
     }
 
     cmd_output->needs_tree_render = true;
@@ -1591,6 +1599,33 @@ void cmd_layout_toggle(I3_CMD, const char *toggle_mode) {
         TAILQ_FOREACH (current, &owindows, owindows) {
             DLOG("matching: %p / %s\n", current->con, current->con->name);
             con_toggle_layout(current->con, toggle_mode);
+        }
+    }
+
+    cmd_output->needs_tree_render = true;
+    // XXX: default reply for now, make this a better reply
+    ysuccess(true);
+}
+
+/*
+ * Implementation of 'layout fill_order [default|reverse|toggle]'.
+ *
+ */
+void cmd_layout_fill_order(I3_CMD, const char *fill_order) {
+    owindow *current;
+
+    if (fill_order == NULL)
+        fill_order = "default";
+
+    DLOG("setting layout fill order to %s\n", fill_order);
+
+    /* check if the match is empty, not if the result is empty */
+    if (match_is_empty(current_match))
+        con_set_layout_fill_order(focused, fill_order);
+    else {
+        TAILQ_FOREACH (current, &owindows, owindows) {
+            DLOG("matching: %p / %s\n", current->con, current->con->name);
+            con_set_layout_fill_order(current->con, fill_order);
         }
     }
 
