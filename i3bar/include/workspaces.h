@@ -18,10 +18,10 @@ typedef struct i3_ws i3_ws;
 TAILQ_HEAD(ws_head, i3_ws);
 
 /*
- * Start parsing the received JSON string
+ * Parse the received JSON string
  *
  */
-void parse_workspaces_json(char *json);
+void parse_workspaces_json(const unsigned char *json, size_t size);
 
 /*
  * free() all workspace data structures

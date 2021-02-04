@@ -471,6 +471,7 @@ state BAR:
   'set' -> BAR_IGNORE_LINE
   'i3bar_command'          -> BAR_BAR_COMMAND
   'status_command'         -> BAR_STATUS_COMMAND
+  'workspace_command'      -> BAR_WORKSPACE_COMMAND
   'socket_path'            -> BAR_SOCKET_PATH
   'mode'                   -> BAR_MODE
   'hidden_state'           -> BAR_HIDDEN_STATE
@@ -507,6 +508,10 @@ state BAR_BAR_COMMAND:
 state BAR_STATUS_COMMAND:
   command = string
       -> call cfg_bar_status_command($command); BAR
+
+state BAR_WORKSPACE_COMMAND:
+  command = string
+      -> call cfg_bar_workspace_command($command); BAR
 
 state BAR_SOCKET_PATH:
   path = string

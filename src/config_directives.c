@@ -637,6 +637,11 @@ CFGFUN(bar_status_command, const char *command) {
     current_bar->status_command = sstrdup(command);
 }
 
+CFGFUN(bar_workspace_command, const char *command) {
+    FREE(current_bar->workspace_command);
+    current_bar->workspace_command = sstrdup(command);
+}
+
 CFGFUN(bar_binding_mode_indicator, const char *value) {
     current_bar->hide_binding_mode_indicator = !eval_boolstr(value);
 }

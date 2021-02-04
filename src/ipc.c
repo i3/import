@@ -792,6 +792,7 @@ static void dump_bar_config(yajl_gen gen, Barconfig *config) {
         ystr("top");
 
     YSTR_IF_SET(status_command);
+    YSTR_IF_SET(workspace_command);
     YSTR_IF_SET(font);
 
     if (config->separator_symbol) {

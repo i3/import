@@ -500,6 +500,56 @@ static int predict_button_width(int name_width) {
                logical_px(config.ws_min_width));
 }
 
+static void focus_workspace(i3_ws *ws) {
+    char *buffer = NULL;
+    if (ws->id != 0) {
+        /* Workspace ID has higher precedence since the workspace_command is
+         * allowed to change workspace names as long as it provides a valid ID. */
+        sasprintf(&buffer, "[con_id=%lld] focus workspace", ws->id);
+        goto done;
+    }
+
+    if (ws->canonical_name == NULL) {
+        return;
+    }
+
+    /* To properly handle workspace names with double quotes in them, we need
+     * to escape the double quotes. Unfortunately, that’s rather ugly in C: We
+     * first count the number of double quotes, then we allocate a large enough
+     * buffer, then we copy character by character. */
+    int num_quotes = 0;
+    size_t namelen = 0;
+    const char *utf8_name = ws->canonical_name;
+    for (const char *walk = utf8_name; *walk != '\0'; walk++) {
+        if (*walk == '"' || *walk == '\\') {
+            num_quotes++;
+        }
+        /* While we’re looping through the name anyway, we can save one
+         * strlen(). */
+        namelen++;
+    }
+
+    const size_t len = namelen + strlen("workspace \"\"") + 1;
+    buffer = scalloc(len + num_quotes, 1);
+    memcpy(buffer, "workspace \"", strlen("workspace \""));
+    size_t inpos, outpos;
+    for (inpos = 0, outpos = strlen("workspace \"");
+         inpos < namelen;
+         inpos++, outpos++) {
+        if (utf8_name[inpos] == '"' || utf8_name[inpos] == '\\') {
+            buffer[outpos] = '\\';
+            outpos++;
+        }
+        buffer[outpos] = utf8_name[inpos];
+    }
+    buffer[outpos] = '"';
+
+done:
+    DLOG("sending command %s\n", buffer);  //TODO:delete
+    i3_send_msg(I3_IPC_MESSAGE_TYPE_RUN_COMMAND, buffer);
+    free(buffer);
+}
+
 /*
  * Handle a button press event (i.e. a mouse click on one of our bars).
  * We determine, whether the click occurred on a workspace button or if the scroll-
@@ -620,37 +670,7 @@ static void handle_button(xcb_button_press_event_t *event) {
             return;
     }
 
-    /* To properly handle workspace names with double quotes in them, we need
-     * to escape the double quotes. Unfortunately, that’s rather ugly in C: We
-     * first count the number of double quotes, then we allocate a large enough
-     * buffer, then we copy character by character. */
-    int num_quotes = 0;
-    size_t namelen = 0;
-    const char *utf8_name = cur_ws->canonical_name;
-    for (const char *walk = utf8_name; *walk != '\0'; walk++) {
-        if (*walk == '"' || *walk == '\\')
-            num_quotes++;
-        /* While we’re looping through the name anyway, we can save one
-         * strlen(). */
-        namelen++;
-    }
-
-    const size_t len = namelen + strlen("workspace \"\"") + 1;
-    char *buffer = scalloc(len + num_quotes, 1);
-    memcpy(buffer, "workspace \"", strlen("workspace \""));
-    size_t inpos, outpos;
-    for (inpos = 0, outpos = strlen("workspace \"");
-         inpos < namelen;
-         inpos++, outpos++) {
-        if (utf8_name[inpos] == '"' || utf8_name[inpos] == '\\') {
-            buffer[outpos] = '\\';
-            outpos++;
-        }
-        buffer[outpos] = utf8_name[inpos];
-    }
-    buffer[outpos] = '"';
-    i3_send_msg(I3_IPC_MESSAGE_TYPE_RUN_COMMAND, buffer);
-    free(buffer);
+    focus_workspace(cur_ws);
 }
 
 /*

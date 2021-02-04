@@ -101,30 +101,35 @@ is(parser_calls('resize shrink left 25 px or 33 ppt;'),
 
 is(parser_calls('[con_mark=yay] focus'),
    "cmd_criteria_add(con_mark, yay)\n" .
-   "cmd_focus()",
+   "cmd_focus(0)",
    'criteria focus ok');
+
+is(parser_calls('[con_mark=yay] focus workspace'),
+   "cmd_criteria_add(con_mark, yay)\n" .
+   "cmd_focus(1)",
+   'criteria focus workspace ok');
 
 is(parser_calls("[con_mark=yay con_mark=bar] focus"),
    "cmd_criteria_add(con_mark, yay)\n" .
    "cmd_criteria_add(con_mark, bar)\n" .
-   "cmd_focus()",
+   "cmd_focus(0)",
    'criteria focus ok');
 
 is(parser_calls("[con_mark=yay\tcon_mark=bar] focus"),
    "cmd_criteria_add(con_mark, yay)\n" .
    "cmd_criteria_add(con_mark, bar)\n" .
-   "cmd_focus()",
+   "cmd_focus(0)",
    'criteria focus ok');
 
 is(parser_calls("[con_mark=yay\tcon_mark=bar]\tfocus"),
    "cmd_criteria_add(con_mark, yay)\n" .
    "cmd_criteria_add(con_mark, bar)\n" .
-   "cmd_focus()",
+   "cmd_focus(0)",
    'criteria focus ok');
 
 is(parser_calls('[con_mark="yay"] focus'),
    "cmd_criteria_add(con_mark, yay)\n" .
-   "cmd_focus()",
+   "cmd_focus(0)",
    'quoted criteria focus ok');
 
 # Make sure trailing whitespace is stripped off: While this is not an issue for

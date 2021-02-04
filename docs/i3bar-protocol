@@ -98,6 +98,8 @@ You can find an example of a shell script which can be used as your
 +status_command+ in the bar configuration at
 https://github.com/i3/i3/blob/next/contrib/trivial-bar-script.sh
 
+TODO: maybe same for workspace_command
+
 === Header in detail
 
 version::

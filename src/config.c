@@ -102,6 +102,7 @@ static void free_configuration(void) {
         FREE(barconfig->outputs);
         FREE(barconfig->socket_path);
         FREE(barconfig->status_command);
+        FREE(barconfig->workspace_command);
         FREE(barconfig->i3bar_command);
         FREE(barconfig->font);
         FREE(barconfig->colors.background);

@@ -204,7 +204,7 @@ void cmd_focus_level(I3_CMD, const char *level);
  * Implementation of 'focus'.
  *
  */
-void cmd_focus(I3_CMD);
+void cmd_focus(I3_CMD, bool focus_workspace);
 
 /**
  * Implementation of 'fullscreen [enable|disable|toggle] [global]'.

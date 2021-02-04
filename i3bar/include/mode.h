@@ -24,7 +24,7 @@ struct mode {
 typedef struct mode mode;
 
 /*
- * Start parsing the received JSON string
+ * Parse the received JSON string
  *
  */
-void parse_mode_json(char *json);
+void parse_mode_json(const unsigned char *json, size_t size);

@@ -22,10 +22,10 @@ SLIST_HEAD(outputs_head, i3_output);
 extern struct outputs_head* outputs;
 
 /*
- * Start parsing the received JSON string
+ * Parse the received JSON string
  *
  */
-void parse_outputs_json(char* json);
+void parse_outputs_json(const unsigned char* json, size_t size);
 
 /*
  * Initiate the outputs list

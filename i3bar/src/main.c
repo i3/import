@@ -185,11 +185,11 @@ int main(int argc, char **argv) {
     ev_signal_start(main_loop, sig_int);
     ev_signal_start(main_loop, sig_hup);
 
+    atexit(kill_child_at_exit);
+
     /* From here on everything should run smooth for itself, just start listening for
      * events. We stop simply stop the event loop, when we are finished */
     ev_loop(main_loop, 0);
-
-    kill_child();
 
     clean_xcb();
     ev_default_destroy();

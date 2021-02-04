@@ -52,6 +52,7 @@ typedef struct config_t {
     bool strip_ws_name;
     char *bar_id;
     char *command;
+    char *workspace_command;
     char *fontname;
     i3String *separator_symbol;
     TAILQ_HEAD(tray_outputs_head, tray_output_t) tray_outputs;
@@ -69,17 +70,17 @@ typedef struct config_t {
 extern config_t config;
 
 /**
- * Start parsing the received bar configuration JSON string
+ * Parse the received bar configuration JSON string
  *
  */
-void parse_config_json(char *json);
+void parse_config_json(const unsigned char *json, size_t size);
 
 /**
- * Start parsing the received bar configuration list. The only usecase right
- * now is to automatically get the first bar id.
+ * Parse the received bar configuration list. The only usecase right now is to
+ * automatically get the first bar id.
  *
  */
-void parse_get_first_i3bar_config(char *json);
+void parse_get_first_i3bar_config(const unsigned char *json, size_t size);
 
 /**
  * free()s the color strings as soon as they are not needed anymore.

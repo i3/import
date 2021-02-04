@@ -19,7 +19,8 @@ struct workspaces_json_params {
     struct ws_head *workspaces;
     i3_ws *workspaces_walk;
     char *cur_key;
-    char *json;
+    bool need_output;
+    bool parsing_rect;
 };
 
 /*
@@ -156,15 +157,16 @@ static int workspaces_string_cb(void *params_, const unsigned char *val, size_t 
         sasprintf(&output_name, "%.*s", len, val);
 
         i3_output *target = get_output_by_name(output_name);
+        i3_ws *ws = params->workspaces_walk;
         if (target != NULL) {
-            params->workspaces_walk->output = target;
-
-            TAILQ_INSERT_TAIL(params->workspaces_walk->output->workspaces,
-                              params->workspaces_walk,
-                              tailq);
+            ws->output = target;
+            TAILQ_INSERT_TAIL(ws->output->workspaces, ws, tailq);
         }
 
+        params->need_output = false;
         FREE(output_name);
+        FREE(params->cur_key);
+
         return 1;
     }
 
@@ -172,27 +174,41 @@ static int workspaces_string_cb(void *params_, const unsigned char *val, size_t 
 }
 
 /*
- * We hit the start of a JSON map (rect or a new output)
+ * We hit the start of a JSON map (rect or a new workspace)
  *
  */
 static int workspaces_start_map_cb(void *params_) {
     struct workspaces_json_params *params = (struct workspaces_json_params *)params_;
 
-    i3_ws *new_workspace = NULL;
-
     if (params->cur_key == NULL) {
-        new_workspace = smalloc(sizeof(i3_ws));
+        i3_ws *new_workspace = scalloc(1, sizeof(i3_ws));
         new_workspace->num = -1;
-        new_workspace->name = NULL;
-        new_workspace->visible = 0;
-        new_workspace->focused = 0;
-        new_workspace->urgent = 0;
-        memset(&new_workspace->rect, 0, sizeof(rect));
-        new_workspace->output = NULL;
 
         params->workspaces_walk = new_workspace;
+        params->need_output = true;
+        params->parsing_rect = false;
+    } else {
+        params->parsing_rect = true;
+    }
+
+    return 1;
+}
+
+static int workspaces_end_map_cb(void *params_) {
+    struct workspaces_json_params *params = (struct workspaces_json_params *)params_;
+    i3_ws *ws = params->workspaces_walk;
+    const bool parsing_rect = params->parsing_rect;
+    params->parsing_rect = false;
+
+    if (parsing_rect || !ws || !params->need_output) {
         return 1;
     }
+
+    ws->output = get_output_by_name("primary");
+    if (ws->output == NULL) {
+        ws->output = SLIST_FIRST(outputs);
+    }
+    TAILQ_INSERT_TAIL(ws->output->workspaces, ws, tailq);
 
     return 1;
 }
@@ -216,29 +232,22 @@ static yajl_callbacks workspaces_callbacks = {
     .yajl_integer = workspaces_integer_cb,
     .yajl_string = workspaces_string_cb,
     .yajl_start_map = workspaces_start_map_cb,
+    .yajl_end_map = workspaces_end_map_cb,
     .yajl_map_key = workspaces_map_key_cb,
 };
 
 /*
- * Start parsing the received JSON string
+ * Parse the received JSON string
  *
  */
-void parse_workspaces_json(char *json) {
-    /* FIXME: Fasciliate stream processing, i.e. allow starting to interpret
-     * JSON in chunks */
-    struct workspaces_json_params params;
+void parse_workspaces_json(const unsigned char *json, size_t size) {
+    DLOG("Got ws json: %.*s\n", (int)size, (const char *)json);  // TODO: delete
 
     free_workspaces();
 
-    params.workspaces_walk = NULL;
-    params.cur_key = NULL;
-    params.json = json;
-
-    yajl_handle handle;
-    yajl_status state;
-    handle = yajl_alloc(&workspaces_callbacks, NULL, (void *)&params);
-
-    state = yajl_parse(handle, (const unsigned char *)json, strlen(json));
+    struct workspaces_json_params params = {0};
+    yajl_handle handle = yajl_alloc(&workspaces_callbacks, NULL, (void *)&params);
+    yajl_status state = yajl_parse(handle, json, size);
 
     /* FIXME: Proper error handling for JSON parsing */
     switch (state) {
@@ -247,12 +256,16 @@ void parse_workspaces_json(char *json) {
         case yajl_status_client_canceled:
         case yajl_status_error:
             ELOG("Could not parse workspaces reply!\n");
-            exit(EXIT_FAILURE);
+            if (config.workspace_command) {
+                kill_ws_child();
+                set_workspace_button_error("Could not parse workspace_command's JSON");
+            } else {
+                exit(EXIT_FAILURE);
+            }
             break;
     }
 
     yajl_free(handle);
-
     FREE(params.cur_key);
 }
 
@@ -261,14 +274,14 @@ void parse_workspaces_json(char *json) {
  *
  */
 void free_workspaces(void) {
-    i3_output *outputs_walk;
     if (outputs == NULL) {
         return;
     }
-    i3_ws *ws_walk;
 
+    i3_output *outputs_walk;
     SLIST_FOREACH (outputs_walk, outputs, slist) {
         if (outputs_walk->workspaces != NULL && !TAILQ_EMPTY(outputs_walk->workspaces)) {
+            i3_ws *ws_walk;
             TAILQ_FOREACH (ws_walk, outputs_walk->workspaces, tailq) {
                 I3STRING_FREE(ws_walk->name);
                 FREE(ws_walk->canonical_name);
