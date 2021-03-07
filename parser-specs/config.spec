@@ -483,6 +483,7 @@ state BAR:
   'output'                 -> BAR_OUTPUT
   'tray_output'            -> BAR_TRAY_OUTPUT
   'tray_padding'           -> BAR_TRAY_PADDING
+  'height'                 -> BAR_HEIGHT
   'font'                   -> BAR_FONT
   'separator_symbol'       -> BAR_SEPARATOR_SYMBOL
   'binding_mode_indicator' -> BAR_BINDING_MODE_INDICATOR
@@ -575,6 +576,16 @@ state BAR_TRAY_PADDING_PX:
       ->
   end
       -> call cfg_bar_tray_padding(&padding_px); BAR
+
+state BAR_HEIGHT:
+  height_px = number
+      -> BAR_HEIGHT_PX
+
+state BAR_HEIGHT_PX:
+  'px'
+      ->
+  end
+      -> call cfg_bar_height(&height_px); BAR
 
 state BAR_FONT:
   font = string

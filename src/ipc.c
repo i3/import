@@ -753,6 +753,9 @@ static void dump_bar_config(yajl_gen gen, Barconfig *config) {
     ystr("tray_padding");
     y(integer, config->tray_padding);
 
+    ystr("height");
+    y(integer, config->height);
+
     YSTR_IF_SET(socket_path);
 
     ystr("mode");

@@ -133,6 +133,18 @@ void reconfig_windows(bool redraw_bars);
 void draw_bars(bool force_unhide);
 
 /*
+ * Returns the width of a workspace's button
+ *
+ */
+int workspace_button_width(i3_ws *ws);
+
+/*
+ * Returns the width of a biding button
+ *
+ */
+int binding_button_width(mode binding);
+
+/*
  * Redraw the bars, i.e. simply copy the buffer to the barwindow
  *
  */

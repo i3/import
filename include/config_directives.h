@@ -93,6 +93,7 @@ CFGFUN(bar_color, const char *colorclass, const char *border, const char *backgr
 CFGFUN(bar_socket_path, const char *socket_path);
 CFGFUN(bar_tray_output, const char *output);
 CFGFUN(bar_tray_padding, const long spacing_px);
+CFGFUN(bar_height, const long height_px);
 CFGFUN(bar_color_single, const char *colorclass, const char *color);
 CFGFUN(bar_status_command, const char *command);
 CFGFUN(bar_binding_mode_indicator, const char *value);

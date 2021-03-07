@@ -35,6 +35,7 @@ struct i3_ws {
     char *canonical_name;     /* The true name of the ws according to the ipc */
     i3String *name;           /* The name of the ws that is displayed on the bar */
     int name_width;           /* The rendered width of the name */
+    int button_width;         /* The rendered width of the button */
     bool visible;             /* If the ws is currently visible on an output */
     bool focused;             /* If the ws is currently focused */
     bool urgent;              /* If the urgent hint of the ws is set */

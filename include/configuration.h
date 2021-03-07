@@ -275,6 +275,9 @@ struct Barconfig {
     /* Padding around the tray icons. */
     int tray_padding;
 
+    /* Bar height. */
+    int height;
+
     /** Path to the i3 IPC socket. This option is discouraged since programs
      * can find out the path by looking for the I3_SOCKET_PATH property on the
      * root window! */

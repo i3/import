@@ -617,6 +617,10 @@ CFGFUN(bar_tray_padding, const long padding_px) {
     current_bar->tray_padding = padding_px;
 }
 
+CFGFUN(bar_height, const long height) {
+    current_bar->height = height;
+}
+
 CFGFUN(bar_color_single, const char *colorclass, const char *color) {
     if (strcmp(colorclass, "background") == 0)
         current_bar->colors.background = sstrdup(color);

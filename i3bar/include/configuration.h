@@ -55,6 +55,7 @@ typedef struct config_t {
     char *fontname;
     i3String *separator_symbol;
     TAILQ_HEAD(tray_outputs_head, tray_output_t) tray_outputs;
+    int height;
     int tray_padding;
     int num_outputs;
     char **outputs;
