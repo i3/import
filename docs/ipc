@@ -382,6 +382,9 @@ focus (array of integer)::
 	order. Traversing the tree by following the first entry in this array
 	will result in eventually reaching the one node with +focused+ set to
 	true.
+sticky (bool)::
+	Whether this window is "sticky". If it is also floating, this window will
+	be present on all workspaces on the same output.
 fullscreen_mode (integer)::
 	Whether this container is in fullscreen state or not.
     Possible values are
@@ -389,7 +392,12 @@ fullscreen_mode (integer)::
         +1+ (fullscreened on output) or
         +2+ (fullscreened globally).
     Note that all workspaces are considered fullscreened on their respective output.
-
+floating (string)::
+	Whether the window was floating, and how the floating was enabled. Can be one of
+	    "auto_off" - floating off
+		"user_off" - floating off per user command
+		"auto_on" - floating on
+		"user_on" - floating on by per user command
 nodes (array of node)::
 	The tiling (i.e. non-floating) child containers of this node.
 floating_nodes (array of node)::
