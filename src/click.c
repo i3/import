@@ -215,8 +215,16 @@ static void route_click(Con *con, xcb_button_press_event_t *event, const bool mo
         goto done;
     }
 
-    /* 2: floating modifier pressed, initiate a drag */
-    if (!config.disable_tiling_drag && mod_pressed && event->detail == XCB_BUTTON_INDEX_1 && !floatingcon) {
+    /* 2: floating modifier / decoration pressed, initiate a drag */
+    if (!config.disable_tiling_drag && (mod_pressed || dest == CLICK_DECORATION) && is_left_click && !floatingcon) {
+        if (!mod_pressed){
+            /* Dragging with the floating modifier does not change focus.
+             * However, when initiating the drag with the decoration we must
+             * activate the container in case the user only meant to click on
+             * the title to focus the window. */
+            con_activate(con);
+        }
+
         tiling_drag(con, event);
         goto done;
     }
