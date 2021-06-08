@@ -81,6 +81,53 @@ bool event_is_ignored(const int sequence, const int response_type) {
     return false;
 }
 
+typedef enum {
+    RG_DEFAULT = 0,
+    RG_TRANSLATE = 1,
+    RG_LOAD_KEYMAP_AND_TRANSLATE = 2,
+    RG_UPDATE_KEY_SYMBOLS_AND_LOAD_KEYMAP_AND_TRANSLATE = 3,
+} regrab_mode_t;
+
+static regrab_mode_t pending_regrab = RG_DEFAULT;
+static ev_idle regrab_watcher;
+static bool regrab_watcher_initialised = false;
+extern struct ev_loop *main_loop;
+
+static void regrab_keys_cb(EV_P_ ev_idle *w, int revents) {
+    ev_idle_stop(main_loop, w);
+
+    ungrab_all_keys(conn);
+    switch (pending_regrab) {
+    case RG_DEFAULT:
+        break;
+    case RG_UPDATE_KEY_SYMBOLS_AND_LOAD_KEYMAP_AND_TRANSLATE:
+        xcb_key_symbols_free(keysyms);
+        keysyms = xcb_key_symbols_alloc(conn);
+        /* fall through */
+    case RG_LOAD_KEYMAP_AND_TRANSLATE:
+        (void)load_keymap();
+        /* fall through */
+    case RG_TRANSLATE:
+        translate_keysyms();
+        break;
+    }
+    grab_all_keys(conn);
+
+    pending_regrab = RG_DEFAULT;
+}
+
+/*
+ * Called when the keyboard state changed and we need to re-grab keys.
+ */
+static void regrab_keys(regrab_mode_t mode) {
+    pending_regrab = max(pending_regrab, mode);
+    if (!regrab_watcher_initialised) {
+        regrab_watcher_initialised = true;
+        ev_idle_init(&regrab_watcher, regrab_keys_cb);
+    }
+    ev_idle_start(main_loop, &regrab_watcher);
+}
+
 /*
  * Called with coordinates of an enter_notify event or motion_notify event
  * to check if the user crossed virtual screen boundaries and adjust the
@@ -246,9 +293,7 @@ static void handle_mapping_notify(xcb_mapping_notify_event_t *event) {
 
     xcb_numlock_mask = aio_get_mod_mask_for(XCB_NUM_LOCK, keysyms);
 
-    ungrab_all_keys(conn);
-    translate_keysyms();
-    grab_all_keys(conn);
+    regrab_keys(RG_TRANSLATE);
 }
 
 /*
@@ -1297,30 +1342,23 @@ void handle_event(int type, xcb_generic_event_t *event) {
             xcb_key_symbols_free(keysyms);
             keysyms = xcb_key_symbols_alloc(conn);
             if (((xcb_xkb_new_keyboard_notify_event_t *)event)->changed & XCB_XKB_NKN_DETAIL_KEYCODES)
-                (void)load_keymap();
-            ungrab_all_keys(conn);
-            translate_keysyms();
-            grab_all_keys(conn);
+                regrab_keys(RG_LOAD_KEYMAP_AND_TRANSLATE);
+            else
+                regrab_keys(RG_TRANSLATE);
         } else if (state->xkbType == XCB_XKB_MAP_NOTIFY) {
             if (event_is_ignored(event->sequence, type)) {
                 DLOG("Ignoring map notify event for sequence %d.\n", state->sequence);
             } else {
                 DLOG("xkb map notify, sequence %d, time %d\n", state->sequence, state->time);
                 add_ignore_event(event->sequence, type);
-                xcb_key_symbols_free(keysyms);
-                keysyms = xcb_key_symbols_alloc(conn);
-                ungrab_all_keys(conn);
-                translate_keysyms();
-                grab_all_keys(conn);
-                (void)load_keymap();
+                regrab_keys(RG_UPDATE_KEY_SYMBOLS_AND_LOAD_KEYMAP_AND_TRANSLATE);
             }
         } else if (state->xkbType == XCB_XKB_STATE_NOTIFY) {
             DLOG("xkb state group = %d\n", state->group);
             if (xkb_current_group == state->group)
                 return;
             xkb_current_group = state->group;
-            ungrab_all_keys(conn);
-            grab_all_keys(conn);
+            regrab_keys(RG_DEFAULT);
         }
 
         return;
