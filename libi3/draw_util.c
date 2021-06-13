@@ -47,6 +47,7 @@ void draw_util_surface_init(xcb_connection_t *conn, surface_t *surface, xcb_draw
     xcb_generic_error_t *error = xcb_request_check(conn, gc_cookie);
     if (error != NULL) {
         ELOG("Could not create graphical context. Error code: %d. Please report this bug.\n", error->error_code);
+        free(error);
     }
 
     surface->surface = cairo_xcb_surface_create(conn, surface->id, visual, width, height);
@@ -58,6 +59,19 @@ void draw_util_surface_init(xcb_connection_t *conn, surface_t *surface, xcb_draw
  *
  */
 void draw_util_surface_free(xcb_connection_t *conn, surface_t *surface) {
+    cairo_status_t status = CAIRO_STATUS_SUCCESS;
+    if (surface->cr) {
+        status = cairo_status(surface->cr);
+    }
+    if (status != CAIRO_STATUS_SUCCESS) {
+        LOG("Found cairo context in an error status while freeing, error %d is %s",
+            status, cairo_status_to_string(status));
+    }
+
+    /* NOTE: This function is also called on uninitialised surface_t instances.
+     * The x11 error from xcb_free_gc(conn, XCB_NONE) is silently ignored
+     * elsewhere.
+     */
     xcb_free_gc(conn, surface->gc);
     cairo_surface_destroy(surface->surface);
     cairo_destroy(surface->cr);
