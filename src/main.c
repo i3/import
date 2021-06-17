@@ -642,6 +642,19 @@ int main(int argc, char *argv[]) {
     I3_REST_ATOMS_XMACRO
 #undef xmacro
 
+    /* Check if cairo supports this X11 server */
+    {
+        cairo_surface_t *surface = cairo_xcb_surface_create(conn, root, get_visualtype_by_id(root_screen->root_visual), root_screen->width_in_pixels, root_screen->height_in_pixels);
+        cairo_status_t status = cairo_surface_status(surface);
+        cairo_surface_destroy(surface);
+
+        if (status != CAIRO_STATUS_SUCCESS) {
+            ELOG("Cairo does not support this X11 setup!\n");
+            ELOG("Trying to draw to the root window resulted in error %d: %s.\n", status, cairo_status_to_string(status));
+            exit(-1);
+        }
+    }
+
     load_configuration(override_configpath, C_LOAD);
 
     if (config.ipc_socket_path == NULL) {

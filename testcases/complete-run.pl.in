@@ -130,7 +130,7 @@ if ($options{xvfb}) {
 	    # parent when ready, so that the wait call will be interrupted.  We
 	    # can’t implement this in Perl, as Perl’s waitpid transparently
 	    # handles -EINTR.
-	    exec('/bin/sh', '-c', qq|trap "exit" INT; trap : USR1; (trap '' USR1; exec Xvfb :$n -screen 0 640x480x8 -nolisten tcp) & PID=\$!; wait; if ! kill -0 \$PID 2>/dev/null; then echo 1:\$PID > $path; else echo 0:\$PID > $path; wait \$PID; fi|);
+	    exec('/bin/sh', '-c', qq|trap "exit" INT; trap : USR1; (trap '' USR1; exec Xvfb :$n -screen 0 640x480x24 -nolisten tcp) & PID=\$!; wait; if ! kill -0 \$PID 2>/dev/null; then echo 1:\$PID > $path; else echo 0:\$PID > $path; wait \$PID; fi|);
 	    die "exec: $!";
 	}
 	chomp(my $kill = slurp($path));
