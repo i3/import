@@ -1077,6 +1077,21 @@ static void handle_configure_notify(xcb_configure_notify_event_t *event) {
 }
 
 /*
+ * Handles SelectionClear events for the root window, which are generated when
+ * we lose ownership of a selection.
+ */
+static void handle_selection_clear(xcb_selection_clear_event_t *event) {
+    if (event->selection != wm_sn) {
+        DLOG("SelectionClear for unknown selection %d, ignoring\n", event->selection);
+        return;
+    }
+    LOG("Lost WM_Sn selection, exiting.\n");
+    exit(EXIT_SUCCESS);
+
+    /* unreachable */
+}
+
+/*
  * Handles the WM_CLASS property for assignments and criteria selection.
  *
  */
@@ -1426,6 +1441,10 @@ void handle_event(int type, xcb_generic_event_t *event) {
 
         case XCB_CONFIGURE_NOTIFY:
             handle_configure_notify((xcb_configure_notify_event_t *)event);
+            break;
+
+        case XCB_SELECTION_CLEAR:
+            handle_selection_clear((xcb_selection_clear_event_t *)event);
             break;
 
         default:

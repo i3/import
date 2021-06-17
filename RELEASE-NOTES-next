@@ -41,6 +41,8 @@ option is enabled and only then sets a screenshot as background.
   • Add %machine placeholder (WM_CLIENT_MACHINE) to title_format
   • Allow multiple output names in 'move container|workspace to output'
   • Add 'move container|workspace to output next'
+  • Acquire the WM_Sn selection when starting as required by ICCCM
+  • Add --replace command line argument to replace an existing WM
 
  ┌────────────────────────────┐
  │ Bugfixes                   │

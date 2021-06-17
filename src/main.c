@@ -24,6 +24,7 @@
 #include <sys/types.h>
 #include <sys/un.h>
 #include <unistd.h>
+#include <xcb/xcb_atom.h>
 #include <xcb/xinerama.h>
 #include <xcb/bigreq.h>
 
@@ -64,6 +65,9 @@ xcb_timestamp_t last_timestamp = XCB_CURRENT_TIME;
 
 xcb_screen_t *root_screen;
 xcb_window_t root;
+
+xcb_window_t wm_sn_selection_owner;
+xcb_atom_t wm_sn;
 
 /* Color depth, visual id and colormap to use when creating windows and
  * pixmaps. Will use 32 bit depth and an appropriate visual, if available,
@@ -284,6 +288,7 @@ int main(int argc, char *argv[]) {
     char *fake_outputs = NULL;
     bool disable_signalhandler = false;
     bool only_check_config = false;
+    bool replace_wm = false;
     static struct option long_options[] = {
         {"no-autostart", no_argument, 0, 'a'},
         {"config", required_argument, 0, 'c'},
@@ -306,6 +311,7 @@ int main(int argc, char *argv[]) {
         {"fake_outputs", required_argument, 0, 0},
         {"fake-outputs", required_argument, 0, 0},
         {"force-old-config-parser-v4.4-only", no_argument, 0, 0},
+        {"replace", no_argument, 0, 'r'},
         {0, 0, 0, 0}};
     int option_index = 0, opt;
 
@@ -330,7 +336,7 @@ int main(int argc, char *argv[]) {
 
     start_argv = argv;
 
-    while ((opt = getopt_long(argc, argv, "c:CvmaL:hld:V", long_options, &option_index)) != -1) {
+    while ((opt = getopt_long(argc, argv, "c:CvmaL:hld:Vr", long_options, &option_index)) != -1) {
         switch (opt) {
             case 'a':
                 LOG("Autostart disabled using -a\n");
@@ -367,6 +373,9 @@ int main(int argc, char *argv[]) {
                 break;
             case 'l':
                 /* DEPRECATED, ignored for the next 3 versions (3.e, 3.f, 3.g) */
+                break;
+            case 'r':
+                replace_wm = true;
                 break;
             case 0:
                 if (strcmp(long_options[option_index].name, "force-xinerama") == 0 ||
@@ -447,6 +456,9 @@ int main(int argc, char *argv[]) {
                                 "\tto 0 disables SHM logging entirely.\n"
                                 "\tThe default is %d bytes.\n",
                         shmlog_size);
+                fprintf(stderr, "\n");
+                fprintf(stderr, "\t--replace\n"
+                                "\tReplace an existing window manager.\n");
                 fprintf(stderr, "\n");
                 fprintf(stderr, "If you pass plain text arguments, i3 will interpret them as a command\n"
                                 "to send to a currently running i3 (like i3-msg). This allows you to\n"
@@ -586,6 +598,10 @@ int main(int argc, char *argv[]) {
         xcb_prefetch_extension_data(conn, &xcb_randr_id);
     }
 
+    /* Prepare for us to get a current timestamp as recommended by ICCCM */
+    xcb_change_window_attributes(conn, root, XCB_CW_EVENT_MASK, (uint32_t[]){XCB_EVENT_MASK_PROPERTY_CHANGE});
+    xcb_change_property(conn, XCB_PROP_MODE_APPEND, root, XCB_ATOM_SUPERSCRIPT_X, XCB_ATOM_CARDINAL, 32, 0, "");
+
     /* Place requests for the atoms we need as soon as possible */
 #define xmacro(atom) \
     xcb_intern_atom_cookie_t atom##_cookie = xcb_intern_atom(conn, 0, strlen(#atom), #atom);
@@ -627,6 +643,22 @@ int main(int argc, char *argv[]) {
     xcb_get_geometry_cookie_t gcookie = xcb_get_geometry(conn, root);
     xcb_query_pointer_cookie_t pointercookie = xcb_query_pointer(conn, root);
 
+    /* Get the PropertyNotify event we caused above */
+    xcb_flush(conn);
+    {
+        xcb_generic_event_t *event;
+        DLOG("waiting for PropertyNotify event\n");
+        while ((event = xcb_wait_for_event(conn)) != NULL) {
+            if (event->response_type == XCB_PROPERTY_NOTIFY) {
+                last_timestamp = ((xcb_property_notify_event_t *)event)->time;
+                free(event);
+                break;
+            }
+            free(event);
+        }
+        DLOG("got timestamp %d\n", last_timestamp);
+    }
+
     /* Setup NetWM atoms */
 #define xmacro(name)                                                                       \
     do {                                                                                   \
@@ -654,6 +686,103 @@ int main(int argc, char *argv[]) {
 
     if (config.force_xinerama) {
         force_xinerama = true;
+    }
+
+    /* Acquire the WM_Sn selection. */
+    {
+        /* Get the WM_Sn atom */
+        char *atom_name = xcb_atom_name_by_screen("WM_S", conn_screen);
+        wm_sn_selection_owner = xcb_generate_id(conn);
+
+        if (atom_name == NULL) {
+            ELOG("xcb_atom_name_by_screen(\"WM_S\", %d) failed, exiting\n", conn_screen);
+            return 1;
+        }
+
+        xcb_intern_atom_reply_t *atom_reply;
+        atom_reply = xcb_intern_atom_reply(conn,
+                                           xcb_intern_atom_unchecked(conn,
+                                                                     0,
+                                                                     strlen(atom_name),
+                                                                     atom_name),
+                                           NULL);
+        free(atom_name);
+        if (atom_reply == NULL) {
+            ELOG("Failed to intern the WM_Sn atom, exiting\n");
+            return 1;
+        }
+        wm_sn = atom_reply->atom;
+        free(atom_reply);
+
+        /* Check if the selection is already owned */
+        xcb_get_selection_owner_reply_t *selection_reply =
+            xcb_get_selection_owner_reply(conn,
+                                          xcb_get_selection_owner(conn, wm_sn),
+                                          NULL);
+        if (selection_reply && selection_reply->owner != XCB_NONE && !replace_wm) {
+            ELOG("Another window manager is already running (WM_Sn is owned)");
+            return 1;
+        }
+
+        /* Become the selection owner */
+        xcb_create_window(conn,
+                          root_screen->root_depth,
+                          wm_sn_selection_owner, /* window id */
+                          root_screen->root,     /* parent */
+                          -1, -1, 1, 1,          /* geometry */
+                          0,                     /* border width */
+                          XCB_WINDOW_CLASS_INPUT_OUTPUT,
+                          root_screen->root_visual,
+                          0, NULL);
+        xcb_change_property(conn,
+                            XCB_PROP_MODE_REPLACE,
+                            wm_sn_selection_owner,
+                            XCB_ATOM_WM_CLASS,
+                            XCB_ATOM_STRING,
+                            8,
+                            (strlen("i3-WM_Sn") + 1) * 2,
+                            "i3-WM_Sn\0i3-WM_Sn\0");
+
+        xcb_set_selection_owner(conn, wm_sn_selection_owner, wm_sn, last_timestamp);
+
+        if (selection_reply && selection_reply->owner != XCB_NONE) {
+            unsigned int usleep_time = 100000; /* 0.1 seconds */
+            int check_rounds = 150;            /* Wait for a maximum of 15 seconds */
+            xcb_get_geometry_reply_t *geom_reply = NULL;
+
+            DLOG("waiting for old WM_Sn selection owner to exit");
+            do {
+                free(geom_reply);
+                usleep(usleep_time);
+                if (check_rounds-- == 0) {
+                    ELOG("The old window manager is not exiting");
+                    return 1;
+                }
+                geom_reply = xcb_get_geometry_reply(conn,
+                                                    xcb_get_geometry(conn, selection_reply->owner),
+                                                    NULL);
+            } while (geom_reply != NULL);
+        }
+        free(selection_reply);
+
+        /* Announce that we are the new owner */
+        /* Every X11 event is 32 bytes long. Therefore, XCB will copy 32 bytes.
+         * In order to properly initialize these bytes, we allocate 32 bytes even
+         * though we only need less for an xcb_client_message_event_t */
+        union {
+            xcb_client_message_event_t message;
+            char storage[32];
+        } event;
+        memset(&event, 0, sizeof(event));
+        event.message.response_type = XCB_CLIENT_MESSAGE;
+        event.message.window = root_screen->root;
+        event.message.format = 32;
+        event.message.type = A_MANAGER;
+        event.message.data.data32[0] = last_timestamp;
+        event.message.data.data32[1] = wm_sn;
+        event.message.data.data32[2] = wm_sn_selection_owner;
+
+        xcb_send_event(conn, 0, root_screen->root, XCB_EVENT_MASK_STRUCTURE_NOTIFY, event.storage);
     }
 
     xcb_void_cookie_t cookie;
