@@ -733,7 +733,7 @@ Con *remanage_window(Con *con) {
 
     xcb_window_t old_frame = _match_depth(con->window, nc);
 
-    x_reparent_child(nc, con);
+    x_reparent_child2(nc, con);
 
     bool moved_workpaces = (con_get_workspace(nc) != con_get_workspace(con));
 

@@ -251,6 +251,34 @@ void x_move_win(Con *src, Con *dest) {
     }
 }
 
+/*
+ * Reparents child window from old con into new con. The reparenting happens in
+ * the next call of x_push_changes(). Unlike x_reparent_child & x_move_win, this
+ * function assumes that the old con is about to be destroyed and preserves
+ * window_rect and child_mapped.
+ *
+ */
+void x_reparent_child2(Con *new, Con *old) {
+    struct con_state *new_state, *old_state;
+
+    if ((new_state = state_for_frame(new->frame.id)) == NULL) {
+        ELOG("window state for new con not found\n");
+        return;
+    }
+
+    if ((old_state = state_for_frame(old->frame.id)) == NULL) {
+        ELOG("window state for old con not found\n");
+        return;
+    }
+
+    new_state->need_reparent = true;
+    new_state->old_frame = old->frame.id;
+
+    new_state->child_mapped = old_state->child_mapped;
+
+    memcpy(&(new_state->window_rect), &(old_state->window_rect), sizeof(Rect));
+}
+
 static void _x_con_kill(Con *con) {
     con_state *state;
 

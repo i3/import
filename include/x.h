@@ -36,6 +36,15 @@ void x_move_win(Con *src, Con *dest);
 void x_reparent_child(Con *con, Con *old);
 
 /**
+ * Reparents child window from old con into new con. The reparenting happens in
+ * the next call of x_push_changes(). Unlike x_reparent_child & x_move_win, this
+ * function assumes that the old con is about to be destroyed and preserves
+ * window_rect and child_mapped.
+ *
+ */
+void x_reparent_child2(Con *new, Con *old);
+
+/**
  * Re-initializes the associated X window state for this container. You have
  * to call this when you assign a client to an empty container to ensure that
  * its state gets updated correctly.
