@@ -614,33 +614,9 @@ void x_draw_decoration(Con *con) {
 
     /* 6: draw the icon and title */
     int text_offset_y = (con->deco_rect.height - config.font.height) / 2;
-    int text_offset_x = 0;
-
-    struct Window *win = con->window;
 
     const int title_padding = logical_px(2);
     const int deco_width = (int)con->deco_rect.width;
-
-    /* Draw the icon */
-    if (con->window_icon_padding > -1 && win && win->icon) {
-        /* icon_padding is applied horizontally only,
-         * the icon will always use all available vertical space. */
-        const int icon_padding = logical_px(1 + con->window_icon_padding);
-
-        const uint16_t icon_size = con->deco_rect.height - 2 * logical_px(1);
-
-        const int icon_offset_y = logical_px(1);
-
-        text_offset_x += icon_size + 2 * icon_padding;
-
-        draw_util_image(
-            win->icon,
-            &(parent->frame_buffer),
-            con->deco_rect.x + icon_padding,
-            con->deco_rect.y + icon_offset_y,
-            icon_size,
-            icon_size);
-    }
 
     int mark_width = 0;
     if (config.show_marks && !TAILQ_EMPTY(&(con->marks_head))) {
@@ -680,6 +656,7 @@ void x_draw_decoration(Con *con) {
     }
 
     i3String *title = NULL;
+    struct Window *win = con->window;
     if (win == NULL) {
         if (con->title_format == NULL) {
             char *_title;
@@ -699,7 +676,35 @@ void x_draw_decoration(Con *con) {
         goto copy_pixmaps;
     }
 
+    /* calculate basic icon metrics */
+    const int has_icon = con->window_icon_padding > -1 && win && win->icon;
+    const icon_position icon_pos = con->window_icon_position;
+    int icon_title_padding = 0;
+    uint16_t icon_size = 0;
+    int text_deco_width = deco_width;
+    int icon_padding_x = 0;
+    const int icon_padding_y = logical_px(1);
+
+    if (has_icon) {
+        /* icon_padding is applied horizontally only,
+         * the icon will always use all available vertical space. */
+        const int icon_padding_h = logical_px(1 + con->window_icon_padding);
+
+        icon_size = con->deco_rect.height - logical_px(2);
+
+        if (icon_pos == ICON_POSITION_RIGHT) {
+            const int min_text_deco_width = min(deco_width, mark_width + 2 * title_padding);
+            const int new_text_deco_width = deco_width - (icon_size + 2 * icon_padding_h);
+            text_deco_width = max(min_text_deco_width, new_text_deco_width);
+            icon_padding_x = text_deco_width + icon_padding_h;
+        } else {
+            icon_title_padding = icon_size + 2 * icon_padding_h;
+            icon_padding_x = icon_padding_h;
+        }
+    }
+
     int title_offset_x;
+    int min_title_padding = title_padding;
     switch (config.title_align) {
         case ALIGN_LEFT:
             /* (pad)[text    ](pad)[mark + its pad) */
@@ -713,19 +718,50 @@ void x_draw_decoration(Con *con) {
              * where surface_width = deco_width - 2 * pad - mark_width
              * so, offset = pad + (surface_width - predict_text_width) / 2 =
              * = … = (deco_width - mark_width - predict_text_width) / 2 */
-            title_offset_x = max(title_padding, (deco_width - mark_width - predict_text_width(title)) / 2);
+            title_offset_x = max(title_padding, (deco_width - mark_width - predict_text_width(title) - icon_title_padding) / 2);
+            /* if icon position follows title, we might need to reposition
+             * the icon so that it is drawn close to the title at the center */
+            if (icon_pos == ICON_POSITION_TITLE) {
+                if (title_offset_x > title_padding + icon_title_padding) {
+                    icon_padding_x = title_offset_x;
+                }
+            }
             break;
         case ALIGN_RIGHT:
             /* [mark + its pad](pad)[    text](pad) */
-            title_offset_x = max(title_padding + mark_width, deco_width - title_padding - predict_text_width(title));
+            title_offset_x = text_deco_width - title_padding - predict_text_width(title) - icon_title_padding;
+            min_title_padding += mark_width;
+            /* need to adjust the icon position to include the mark width */
+            if (icon_pos != ICON_POSITION_RIGHT) {
+                icon_padding_x += mark_width;
+                if (icon_pos == ICON_POSITION_TITLE) {
+                    icon_padding_x = max(icon_padding_x, title_offset_x);
+                }
+            }
             break;
+    }
+
+    if (title_offset_x < min_title_padding + icon_title_padding) {
+        title_offset_x = min_title_padding + icon_title_padding;
+    } else {
+        title_offset_x += icon_title_padding;
     }
 
     draw_util_text(title, &(parent->frame_buffer),
                    p->color->text, p->color->background,
-                   con->deco_rect.x + text_offset_x + title_offset_x,
+                   con->deco_rect.x + title_offset_x,
                    con->deco_rect.y + text_offset_y,
-                   deco_width - text_offset_x - mark_width - 2 * title_padding);
+                   text_deco_width - mark_width - 2 * title_padding);
+
+    if (has_icon) {
+        draw_util_image(
+            win->icon,
+            &(parent->frame_buffer),
+            con->deco_rect.x + icon_padding_x,
+            con->deco_rect.y + icon_padding_y,
+            icon_size,
+            icon_size);
+    }
 
     if (win == NULL || con->title_format != NULL) {
         I3STRING_FREE(title);

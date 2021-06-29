@@ -337,3 +337,9 @@ void cmd_debuglog(I3_CMD, const char *argument);
  *
  */
 void cmd_title_window_icon(I3_CMD, const char *enable, int padding);
+
+/**
+ * Implementation of 'title_window_icon position <left|right|title>'
+ *
+ */
+void cmd_title_window_icon_position(I3_CMD, const char *position);

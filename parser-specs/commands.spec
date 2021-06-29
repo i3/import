@@ -466,16 +466,26 @@ state TITLE_FORMAT:
 state TITLE_WINDOW_ICON:
   'padding'
     -> TITLE_WINDOW_ICON_PADDING
+  'position'
+    -> TITLE_WINDOW_ICON_POSITION
   enable = '1', 'yes', 'true', 'on', 'enable', 'active', '0', 'no', 'false', 'off', 'disable', 'inactive'
     -> call cmd_title_window_icon($enable, 0)
 
 state TITLE_WINDOW_ICON_PADDING:
-  end
-    -> call cmd_title_window_icon($enable, &padding)
+  padding = number
+    -> TITLE_WINDOW_ICON_PADDING_SUFFIX
+
+state TITLE_WINDOW_ICON_PADDING_SUFFIX:
   'px'
     -> call cmd_title_window_icon($enable, &padding)
-  padding = number
+  end
+    -> call cmd_title_window_icon($enable, &padding)
+
+state TITLE_WINDOW_ICON_POSITION:
+  position_value = 'left', 'right', 'title'
     ->
+  end
+    -> call cmd_title_window_icon_position($position_value)
 
 # bar (hidden_state hide|show|toggle)|(mode dock|hide|invisible|toggle) [<bar_id>]
 state BAR:

@@ -36,7 +36,7 @@ option is enabled and only then sets a screenshot as background.
   • i3-dump-log -f now uses UNIX sockets instead of pthreads. The UNIX socket approach
     should be more reliable and also more portable.
   • Implement the include config directive
-  • Implement optionally showing window icons in titlebar
+  • Implement optionally showing window icons in titlebar and setting their position
   • Allow for_window to match against WM_CLIENT_MACHINE
   • Add %machine placeholder (WM_CLIENT_MACHINE) to title_format
   • Allow multiple output names in 'move container|workspace to output'

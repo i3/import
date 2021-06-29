@@ -501,6 +501,20 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     ystr("window_icon_padding");
     y(integer, con->window_icon_padding);
 
+    ystr("window_icon_position");
+    switch (con->window_icon_position) {
+        case ICON_POSITION_LEFT:
+            ystr("left");
+            break;
+        case ICON_POSITION_RIGHT:
+            ystr("right");
+            break;
+        case ICON_POSITION_TITLE:
+        default:
+            ystr("title");
+            break;
+    }
+
     if (con->type == CT_WORKSPACE) {
         ystr("num");
         y(integer, con->num);
