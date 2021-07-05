@@ -561,12 +561,12 @@ Con *workspace_next(void) {
     Con *current = con_get_workspace(focused);
     Con *next = NULL, *first = NULL, *first_opposite = NULL;
     Con *output;
+    bool found_current = false;
 
     if (current->num == -1) {
         /* If currently a named workspace, find next named workspace. */
         if ((next = TAILQ_NEXT(current, nodes)) != NULL)
             return next;
-        bool found_current = false;
         TAILQ_FOREACH (output, &(croot->nodes_head), nodes) {
             /* Skip outputs starting with __, they are internal. */
             if (con_is_internal(output))
@@ -601,6 +601,12 @@ Con *workspace_next(void) {
                     first_opposite = child;
                 if (child->num == -1)
                     break;
+                if (child == current) {
+                    found_current = true;
+                } else if (child->num == current->num && found_current) {
+                    next = child;
+                    return next;
+                }
                 /* Need to check child against current and next because we are
                  * traversing multiple lists and thus are not guaranteed the
                  * relative order between the list of workspaces. */
@@ -624,6 +630,7 @@ Con *workspace_prev(void) {
     Con *current = con_get_workspace(focused);
     Con *prev = NULL, *first_opposite = NULL, *last = NULL;
     Con *output;
+    bool found_current = false;
 
     if (current->num == -1) {
         /* If named workspace, find previous named workspace. */
@@ -631,7 +638,6 @@ Con *workspace_prev(void) {
         if (prev && prev->num != -1)
             prev = NULL;
         if (!prev) {
-            bool found_current = false;
             TAILQ_FOREACH_REVERSE (output, &(croot->nodes_head), nodes_head, nodes) {
                 /* Skip outputs starting with __, they are internal. */
                 if (con_is_internal(output))
@@ -667,6 +673,12 @@ Con *workspace_prev(void) {
                     first_opposite = child;
                 if (child->num == -1)
                     continue;
+                if (child == current) {
+                    found_current = true;
+                } else if (child->num == current->num && found_current) {
+                    prev = child;
+                    return prev;
+                }
                 /* Need to check child against current and previous because we
                  * are traversing multiple lists and thus are not guaranteed
                  * the relative order between the list of workspaces. */
@@ -690,6 +702,7 @@ Con *workspace_next_on_output(void) {
     Con *current = con_get_workspace(focused);
     Con *next = NULL;
     Con *output = con_get_output(focused);
+    bool found_current = false;
 
     if (current->num == -1) {
         /* If currently a named workspace, find next named workspace. */
@@ -701,6 +714,12 @@ Con *workspace_next_on_output(void) {
                 continue;
             if (child->num == -1)
                 break;
+            if (child == current) {
+                found_current = true;
+            } else if (child->num == current->num && found_current) {
+                next = child;
+                goto workspace_next_on_output_end;
+            }
             /* Need to check child against current and next because we are
              * traversing multiple lists and thus are not guaranteed the
              * relative order between the list of workspaces. */
@@ -711,7 +730,6 @@ Con *workspace_next_on_output(void) {
 
     /* Find next named workspace. */
     if (!next) {
-        bool found_current = false;
         NODES_FOREACH (output_get_content(output)) {
             if (child->type != CT_WORKSPACE)
                 continue;
@@ -745,6 +763,7 @@ Con *workspace_prev_on_output(void) {
     Con *current = con_get_workspace(focused);
     Con *prev = NULL;
     Con *output = con_get_output(focused);
+    bool found_current = false;
     DLOG("output = %s\n", output->name);
 
     if (current->num == -1) {
@@ -757,6 +776,12 @@ Con *workspace_prev_on_output(void) {
         NODES_FOREACH_REVERSE (output_get_content(output)) {
             if (child->type != CT_WORKSPACE || child->num == -1)
                 continue;
+            if (child == current) {
+                found_current = true;
+            } else if (child->num == current->num && found_current) {
+                prev = child;
+                goto workspace_prev_on_output_end;
+            }
             /* Need to check child against current and previous because we
              * are traversing multiple lists and thus are not guaranteed
              * the relative order between the list of workspaces. */
@@ -767,7 +792,6 @@ Con *workspace_prev_on_output(void) {
 
     /* Find previous named workspace. */
     if (!prev) {
-        bool found_current = false;
         NODES_FOREACH_REVERSE (output_get_content(output)) {
             if (child->type != CT_WORKSPACE)
                 continue;
