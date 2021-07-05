@@ -881,9 +881,9 @@ int main(int argc, char *argv[]) {
         ev_io_start(main_loop, log_io);
     }
 
-    /* Also handle the UNIX domain sockets passed via socket activation. The
-     * parameter 1 means "remove the environment variables", we don’t want to
-     * pass these to child processes. */
+    /* Also handle the UNIX domain sockets passed via socket
+     * activation. The parameter 0 means "do not remove the
+     * environment variables", we need to be able to reexec. */
     listen_fds = sd_listen_fds(0);
     if (listen_fds < 0)
         ELOG("socket activation: Error in sd_listen_fds\n");
@@ -1067,5 +1067,6 @@ int main(int argc, char *argv[]) {
      * when calling exit() */
     atexit(i3_exit);
 
+    sd_notify(1, "READY=1");
     ev_loop(main_loop, 0);
 }
