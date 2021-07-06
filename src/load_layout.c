@@ -435,6 +435,14 @@ static int json_string(void *ctx, const unsigned char *val, size_t len) {
         } else if (strcasecmp(last_key, "previous_workspace_name") == 0) {
             FREE(previous_workspace_name);
             previous_workspace_name = sstrndup((const char *)val, len);
+        } else if (strcasecmp(last_key, "window_icon_position") == 0) {
+            if (strcasecmp((const char *)val, "left") == 0) {
+                json_node->window_icon_position = ICON_POSITION_LEFT;
+            } else if (strcasecmp((const char *)val, "right") == 0) {
+                json_node->window_icon_position = ICON_POSITION_RIGHT;
+            } else if (strcasecmp((const char *)val, "title") == 0) {
+                json_node->window_icon_position = ICON_POSITION_TITLE;
+            }
         }
     }
     return 1;

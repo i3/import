@@ -44,6 +44,7 @@ Con *con_new_skeleton(Con *parent, i3Window *window) {
     new->border_style = config.default_border;
     new->current_border_width = -1;
     new->window_icon_padding = -1;
+    new->window_icon_position = ICON_POSITION_TITLE;
     if (window) {
         new->depth = window->depth;
     } else {

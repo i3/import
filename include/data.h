@@ -606,6 +606,15 @@ struct mark_t {
 };
 
 /**
+ * Window icon position.
+ */
+typedef enum {
+    ICON_POSITION_LEFT,
+    ICON_POSITION_RIGHT,
+    ICON_POSITION_TITLE
+} icon_position;
+
+/**
  * A 'Con' represents everything from the X11 root window down to a single X11 window.
  *
  */
@@ -664,6 +673,13 @@ struct Con {
       * means display no window icon (default behavior), 0 means display without
       * any padding, 1 means display with 1 pixel of padding and so on. */
     int window_icon_padding;
+
+    /** The position of the window icon, if enabled.
+      * ICON_POSITION_LEFT means position the icon at the left of the title bar.
+      * ICON_POSITION_RIGHT means position the icon at the right of the title bar.
+      * ICON_POSITION_TITLE means position the icon to the left of the title (exact
+      * position depends on title alignment). */
+    icon_position window_icon_position;
 
     /* a sticky-group is an identifier which bundles several containers to a
      * group. The contents are shared between all of them, that is they are

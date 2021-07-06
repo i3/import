@@ -2067,6 +2067,49 @@ void cmd_title_window_icon(I3_CMD, const char *enable, int padding) {
 }
 
 /*
+ * Implementation of 'title_window_icon position <left|right|title>'
+ *
+ */
+void cmd_title_window_icon_position(I3_CMD, const char *position) {
+    if (!position) {
+        yerror("no position specified");
+        return;
+    }
+
+    icon_position icon_pos;
+    if (strcasecmp(position, "left") == 0) {
+        icon_pos = ICON_POSITION_RIGHT;
+    } else if (strcasecmp(position, "right") == 0) {
+        icon_pos = ICON_POSITION_RIGHT;
+    } else if (strcasecmp(position, "title") == 0) {
+        icon_pos = ICON_POSITION_TITLE;
+    } else {
+        yerror("Unknown position \"%s\"", position);
+        return;
+    }
+
+    DLOG("setting window_icon_position=%s\n", position);
+    HANDLE_EMPTY_MATCH;
+
+    owindow *current;
+    TAILQ_FOREACH (current, &owindows, owindows) {
+        DLOG("setting window_icon_position for %p / %s\n", current->con, current->con->name);
+
+        current->con->window_icon_position = icon_pos;
+        if (current->con->window != NULL) {
+            /* Make sure the window title is redrawn immediately. */
+            current->con->window->name_x_changed = true;
+        } else {
+            /* For windowless containers we also need to force the redrawing. */
+            FREE(current->con->deco_render_params);
+        }
+    }
+
+    cmd_output->needs_tree_render = true;
+    ysuccess(true);
+}
+
+/*
  * Implementation of 'rename workspace [<name>] to <name>'
  *
  */

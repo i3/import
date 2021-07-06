@@ -2715,6 +2715,7 @@ specific windows or for all windows (using the <<for_window>> directive).
 -----------------------------
 title_window_icon <yes|no>
 title_window_icon padding <px>
+title_window_icon position <left|right|title>
 ------------------------------
 
 *Examples*:
@@ -2727,6 +2728,11 @@ for_window [class=".*"] title_window_icon on
 
 # enable window icons for all windows with extra horizontal padding
 for_window [class=".*"] title_window_icon padding 3px
+
+# set the window icon position for all windows to the right (this doesn't show the
+# window icon if it isn't set to be shown using either "title_window_icon on" or
+# "title_window_icon padding")
+for_window [class=".*"] title_window_icon position right
 -------------------------------------------------------------------------------------
 
 === Changing border style
