@@ -122,6 +122,12 @@ struct Config {
      * It is not planned to add any different focus models. */
     bool disable_focus_follows_mouse;
 
+    /** By default, the user can use the floating modifier key and the left
+     * mouse button to move tiling containers. The user can turn this
+     * functionality off.
+     */
+    bool disable_tiling_drag;
+
     /** By default, when switching focus to a window on a different output
      * (e.g. focusing a window on workspace 3 on output VGA-1, coming from
      * workspace 2 on LVDS-1), the mouse cursor is warped to the center of

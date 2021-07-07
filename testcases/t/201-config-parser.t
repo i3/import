@@ -527,6 +527,7 @@ my $expected_all_tokens = "ERROR: CONFIG: Expected one of these tokens: <end>, '
         assign
         no_focus
         focus_follows_mouse
+        tiling_drag
         mouse_warping
         focus_wrapping
         force_focus_wrapping

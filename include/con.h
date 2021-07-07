@@ -363,6 +363,7 @@ void con_move_to_output(Con *con, Output *output, bool fix_coordinates);
  */
 bool con_move_to_output_name(Con *con, const char *name, bool fix_coordinates);
 
+bool con_move_to_target(Con *con, Con *target);
 /**
  * Moves the given container to the given mark.
  *

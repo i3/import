@@ -29,6 +29,7 @@ option is enabled and only then sets a screenshot as background.
  └────────────────────────────┘
 
   • default config: use dex for XDG autostart
+  • Allow moving tiling windows with the mouse, see userguide
   • i3-nagbar: position on focused monitor by default
   • i3-nagbar: add option to position on primary monitor
   • alternate focusing tab/stack children-parent containers by clicking on their titlebars
