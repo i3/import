@@ -101,7 +101,7 @@ static void draw_text_pango(const char *text, size_t text_len,
         pango_layout_set_text(layout, text, text_len);
 
     /* Do the drawing */
-    cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+    cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
     cairo_set_source_rgb(cr, pango_font_red, pango_font_green, pango_font_blue);
     pango_cairo_update_layout(cr, layout);
     pango_layout_get_pixel_size(layout, NULL, &height);
