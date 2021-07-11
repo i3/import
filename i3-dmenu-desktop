@@ -46,9 +46,11 @@ sub slurp {
 
 my @entry_types;
 my $dmenu_cmd = 'dmenu -i';
+my $cmd_prefix = '';
 my $result = GetOptions(
     'dmenu=s' => \$dmenu_cmd,
     'entry-type=s' => \@entry_types,
+    'cmd-prefix=s' => \$cmd_prefix,
     'version' => sub {
         say "dmenu-desktop 1.5 © 2012 Michael Stapelberg";
         exit 0;
@@ -456,6 +458,11 @@ if (exists($app->{Path}) && $app->{Path} ne '') {
 
 my $nosn = '';
 my $cmd;
+
+if (length $cmd_prefix) {
+    $cmd_prefix = "$cmd_prefix ";
+}
+
 if (exists($app->{Terminal}) && $app->{Terminal}) {
     # For applications which specify “Terminal=true” (e.g. htop.desktop),
     # we need to create a temporary script that contains the full command line
@@ -472,7 +479,7 @@ EOT
     close($fh);
     chmod 0755, $filename;
 
-    $cmd = qq|exec i3-sensible-terminal -e "$filename"|;
+    $cmd = qq|exec ${cmd_prefix}i3-sensible-terminal -e "$filename"|;
 } else {
     # i3 executes applications by passing the argument to i3’s “exec” command
     # as-is to $SHELL -c. The i3 parser supports quoted strings: When a string
@@ -485,7 +492,7 @@ EOT
     if (exists($app->{StartupNotify}) && !$app->{StartupNotify}) {
         $nosn = '--no-startup-id';
     }
-    $cmd = qq|exec $nosn "$exec"|;
+    $cmd = qq|exec $nosn "${cmd_prefix}$exec"|;
 }
 
 system('i3-msg', $cmd) == 0 or die "Could not launch i3-msg: $?";
@@ -498,7 +505,7 @@ system('i3-msg', $cmd) == 0 or die "Could not launch i3-msg: $?";
 
 =head1 SYNOPSIS
 
-    i3-dmenu-desktop [--dmenu='dmenu -i'] [--entry-type=name]
+    i3-dmenu-desktop [--dmenu='dmenu -i'] [--cmd-prefix=''] [--entry-type=name]
 
 =head1 DESCRIPTION
 
@@ -544,6 +551,11 @@ fine, but not its Name[ru]=Терминал.
 Execute command instead of 'dmenu -i'. This option can be used to pass custom
 parameters to dmenu, or to make i3-dmenu-desktop start a custom (patched?)
 version of dmenu.
+
+=item B<--cmd-prefix=prefix>
+
+Prepend prefix to the Command that gets executed.
+Can be used to launch Applications on a different display as --cmd-prefix="DISPLAY=:20".
 
 =item B<--entry-type=type>
 
